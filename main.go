@@ -20,6 +20,7 @@ func main() {
 	parser := parserIm.Parser{}
 	parser.Input = L1.Tokens
 	parser.Parsing()
+	fmt.Println(parser.Output)
 
 	NewEnv := interpeter.NewEnvironment(parser.Output, map[string]parserIm.Function{}, map[string]interpeter.Ident{})
 	NewEnv.Interpeter()

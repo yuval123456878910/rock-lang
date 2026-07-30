@@ -1,8 +1,13 @@
-var x int = 2
-if x {
-    print("wow2")
-} elseif x-1 {
-    print("wow3")
-} else {
-    print("wow4")
+func Test(int num) (string) {
+    if num == 1 {
+        print("hello")
+        return "YAY"
+    } elseif num == 2 {
+        print("SO")
+        return "OS"
+    } else {
+        print("Nothing")
+    }
 }
+
+print(Test(1))
