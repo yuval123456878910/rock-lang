@@ -1,10 +1,8 @@
-if x
-{
-    var a int = 1
-} elseif x-1
-{
-    var c int = 5
-} else
-{
-    var b int = 2
+var x int = 2
+if x {
+    print("wow2")
+} elseif x-1 {
+    print("wow3")
+} else {
+    print("wow4")
 }

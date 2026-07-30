@@ -14,16 +14,16 @@ var aviableTypes []string = []string{
 func FindNexer(StartPos int, Tokens []lexer.Token, startFind lexer.Token, endFind lexer.Token) (int, error) {
 	SkipEnds := 0 // this ment to fix when the code find } but it isnt the end
 	for idx, token := range Tokens[StartPos+1:] {
-		if token == endFind && SkipEnds <= 0 {
-			return StartPos + idx, nil
-
-		} else if token == endFind && SkipEnds > 0 {
+		if Equals2Token(token, endFind) {
 			SkipEnds--
-		} else if token == startFind {
+		} else if Equals2Token(token, startFind) {
 			SkipEnds++
 		}
+		if Equals2Token(token, endFind) && SkipEnds <= 0 {
+			return StartPos + idx, nil
+		}
 	}
-	return 0, fmt.Errorf("The system coudnt find end for '{'")
+	return 0, fmt.Errorf("The system coudnt find end for '%s', %d", endFind.Value, SkipEnds)
 }
 
 type NewIdent struct {
@@ -352,10 +352,9 @@ func Parse(Tokens []lexer.Token) []any {
 				fmt.Println("Coudnt find a start to { !")
 				os.Exit(0)
 			}
-			fmt.Println(BlockStart)
-			EndBody, err2 := FindNexer(BlockStart, Tokens, StartToken, EndToken)
+			EndBody, err2 := FindNexer(BlockStart+1, Tokens, StartToken, EndToken)
 			if err2 != nil {
-				fmt.Println("Coudnt find an end to the body!")
+				fmt.Println(err2.Error())
 				os.Exit(0)
 			}
 			NewExpr := Expretion{Tokens: Tokens[pos+1 : BlockStart]}
@@ -363,33 +362,33 @@ func Parse(Tokens []lexer.Token) []any {
 			NewIf.Body = Parse(Tokens[BlockStart+2 : EndBody])
 			pos = EndBody + 2
 			var PointerToIf *IfStm = &NewIf
-			fmt.Println(Tokens[pos])
 		loop:
 			for Equals2Token(Tokens[pos], lexer.Token{Value: "elseif", Type: lexer.KEYWORD}) || Equals2Token(Tokens[pos], lexer.Token{Value: "else", Type: lexer.KEYWORD}) {
 				switch Tokens[pos].Value {
 				case "elseif":
-					fmt.Println("WOW")
+					StartToken = lexer.Token{Value: "{", Type: lexer.PUNCTUATOR}
+					EndToken = lexer.Token{Value: "}", Type: lexer.PUNCTUATOR}
 					var NewIfElse IfStm
 
 					BlockStart2, err3 := SearchStartToken(Tokens, pos, func(item any) any { return item.(lexer.Token).Value }, "{")
+
 					if err3 != nil {
 						fmt.Println("Coudnt find a start to { !")
 						os.Exit(0)
 					}
 					EndBody2, err4 := FindNexer(BlockStart2+1, Tokens, StartToken, EndToken)
 					if err4 != nil {
-						fmt.Println("Coudnt find an end to the body!")
+						fmt.Println(err4.Error())
 						os.Exit(0)
 					}
-
 					NewExpr2 := Expretion{Tokens: Tokens[pos+1 : BlockStart2]}
 					NewIfElse.Condition = ParseBinding(&NewExpr2, 0)
-					NewIfElse.Body = Parse(Tokens[BlockStart+1 : EndBody2])
+					NewIfElse.Body = Parse(Tokens[BlockStart2+1 : EndBody2])
 					PointerToIf.Else = &NewIfElse
 					PointerToIf = &NewIfElse
 					pos = EndBody2 + 2
-				case "else":
 
+				case "else":
 					var NewElse IfStm
 					BlockStart, err := SearchStartToken(Tokens, pos, func(item any) any { return item.(lexer.Token).Value }, "{")
 					if err != nil {
@@ -402,9 +401,10 @@ func Parse(Tokens []lexer.Token) []any {
 						fmt.Println("Coudnt find an end to else!")
 						os.Exit(1)
 					}
-					fmt.Println()
 					NewElse.Body = Parse(Tokens[pos+1 : EndBody3])
+					NewElse.Condition = 1
 					PointerToIf.Else = &NewElse
+
 					PointerToIf = &NewElse
 					pos = EndBody3 + 2
 					break loop
@@ -412,7 +412,6 @@ func Parse(Tokens []lexer.Token) []any {
 
 			}
 			Global_Result = append(Global_Result, NewIf)
-			fmt.Println("Stoped")
 		}
 
 	}
@@ -451,10 +450,13 @@ func IsExpress(token lexer.Token) bool {
 }
 
 var Binding map[string]float32 = map[string]float32{
-	"+": 1,
-	"-": 1,
-	"*": 2,
-	"/": 2,
+	"==": 0,
+	"<=": 0,
+	">=": 0,
+	"+":  1,
+	"-":  1,
+	"*":  2,
+	"/":  2,
 }
 
 func RetriveBinding(Value string) float32 {

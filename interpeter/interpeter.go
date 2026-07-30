@@ -25,6 +25,7 @@ var (
 	IntType         string   = ReturnType(0)
 	RefactType      string   = ReturnType(parser.RefactIdent{})
 	HouseType       string   = ReturnType(parser.House{})
+	IfType          string   = ReturnType(parser.IfStm{})
 )
 
 type Keyfunc func(args ...any) ([]any, string)
@@ -35,6 +36,13 @@ type Environment struct {
 	ParseDate   []any
 	Output      []any
 	Keyfuncs    map[string]Keyfunc
+}
+
+func BoolToInt(Bool bool) int {
+	if Bool {
+		return 1
+	}
+	return 0
 }
 
 func NewEnvironment(parseDate []any, funcMap map[string]parser.Function, variableMap map[string]Ident) Environment {
@@ -271,6 +279,32 @@ func Evaluate(CalData any, indentMap map[string]Ident, funcMap map[string]parser
 			os.Exit(1)
 
 		}
+	case "==":
+		LeftSide, _ := Evaluate(op.Left, indentMap, funcMap, keyFuncs)
+		RightSide, _ := Evaluate(op.Right, indentMap, funcMap, keyFuncs)
+		if !slices.Contains(ApproveSideToOp, ReturnType(LeftSide)) && !slices.Contains(ApproveSideToOp, ReturnType(RightSide)) {
+			fmt.Println("Cant do None type!", ReturnType(LeftSide), ReturnType(RightSide))
+		}
+		switch left := LeftSide.(type) {
+		case int:
+			RightValue, ok := RightSide.(int)
+			if ok {
+				return BoolToInt(RightValue == left), []string{"int"}
+			}
+			RightValue2, ok2 := RightSide.(float64)
+			if ok2 {
+				return BoolToInt(RightValue2 == float64(left)), []string{"int"}
+			}
+		case float64:
+			RightValue, ok := RightSide.(int)
+			if ok {
+				return BoolToInt(float64(RightValue) == left), []string{"int"}
+			}
+			RightValue2, ok2 := RightSide.(float64)
+			if ok2 {
+				return BoolToInt(RightValue2 == left), []string{"int"}
+			}
+		}
 	}
 	return Value, []string{"null"}
 }
@@ -400,10 +434,30 @@ func (Env *Environment) Interpeter() {
 				fmt.Println("Not every arg has a corospond arg!")
 				os.Exit(1)
 			}
-			for index := 0; index < len(Names); index++ {
+			for index := range len(Names) {
 				Env.VariableMap[Names[index]] = Ident{Value: flattenContexts[index], Type: Types[index], Name: Names[index], IsConst: false}
 			}
+		case IfType:
+			var TempIfPointer parser.IfStm = ParseToken.(parser.IfStm)
+			for true {
+				Values, types := Evaluate(TempIfPointer.Condition, Env.VariableMap, Env.FuncMap, Env.Keyfuncs)
+				if len(types) != 1 {
+					fmt.Println("The condition isnt one typed!")
+					os.Exit(1)
+				}
+				if types[0] != "int" {
+					fmt.Println("The condition type isnt an int!")
+					os.Exit(1)
+				}
 
+				if Values.(int) == 1 {
+					NewEnv := NewEnvironment(TempIfPointer.Body, Env.FuncMap, Env.VariableMap)
+					NewEnv.Interpeter()
+					break
+				}
+
+				TempIfPointer = *TempIfPointer.Else
+			}
 		}
 	}
 

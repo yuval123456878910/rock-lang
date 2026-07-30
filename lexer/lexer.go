@@ -136,8 +136,8 @@ func CanBeNegetive(Text string, pos int) bool {
 
 func (l *Lexer) IdentifyWord() {
 	l.SkipSpaces()
-	for l.ch == '\n' && l.pos < len(l.Input) {
 
+	for l.ch == '\n' && l.pos < len(l.Input) {
 		var NewToken Token
 		NewToken.Type = NEWLINE
 		NewToken.Value = ""
