@@ -7,7 +7,8 @@ func Test(int num) (string) {
         return "OS"
     } else {
         print("Nothing")
+        return "STOP"
     }
 }
 
-print(Test(1))
+print("Result:",Test(1))

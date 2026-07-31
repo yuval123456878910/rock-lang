@@ -36,6 +36,7 @@ type Environment struct {
 	ParseDate   []any
 	Output      []any
 	Keyfuncs    map[string]Keyfunc
+	Returned    bool
 }
 
 func BoolToInt(Bool bool) int {
@@ -51,6 +52,7 @@ func NewEnvironment(parseDate []any, funcMap map[string]parser.Function, variabl
 	TempEnv.VariableMap = variableMap
 	TempEnv.ParseDate = parseDate
 	TempEnv.Keyfuncs = map[string]Keyfunc{}
+	TempEnv.Returned = false
 	TempEnv.Keyfuncs["print"] = Keyfunc(func(args ...any) ([]any, string) {
 		for _, arg := range args {
 			switch Targ := arg.(type) {
@@ -383,10 +385,12 @@ func (Env *Environment) Interpeter() {
 
 		case ReturnType(parser.Return{}):
 			TempReturn := ParseToken.(parser.Return)
+			Env.Output = []any{}
 			for _, expr := range TempReturn.Exprs {
 				ReturnEval, _ := Evaluate(expr, Env.VariableMap, Env.FuncMap, Env.Keyfuncs)
 				Env.Output = append(Env.Output, ReturnEval)
 			}
+			Env.Returned = true
 			return
 
 		case RefactType:
@@ -453,6 +457,10 @@ func (Env *Environment) Interpeter() {
 				if Values.(int) == 1 {
 					NewEnv := NewEnvironment(TempIfPointer.Body, Env.FuncMap, Env.VariableMap)
 					NewEnv.Interpeter()
+					if NewEnv.Returned {
+						Env.Output = append(Env.Output, NewEnv.Output...)
+						return
+					}
 					break
 				}
 
