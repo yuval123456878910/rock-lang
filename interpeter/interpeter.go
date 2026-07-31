@@ -132,6 +132,7 @@ func Evaluate(CalData any, indentMap map[string]Ident, funcMap map[string]parser
 
 			return l, []string{t}
 		}
+
 		NewEnv := Environment{ParseDate: CallFunc.Body, VariableMap: CallVarMap, FuncMap: funcMap, Keyfuncs: keyFuncs}
 		NewEnv.Interpeter()
 		Types := []string{}
@@ -163,7 +164,7 @@ func Evaluate(CalData any, indentMap map[string]Ident, funcMap map[string]parser
 			}
 			right2, ok2 := RightSide.(float64)
 			if ok2 {
-				return int(right2) + left, []string{"int"}
+				return right2 + float64(left), []string{"float"}
 			}
 
 		case float64:
@@ -199,7 +200,7 @@ func Evaluate(CalData any, indentMap map[string]Ident, funcMap map[string]parser
 			}
 			right2, ok2 := RightSide.(float64)
 			if ok2 {
-				return left - int(right2), []string{"int"}
+				return float64(left) - right2, []string{"float"}
 			}
 		case float64:
 			right, ok := RightSide.(int)
@@ -225,7 +226,7 @@ func Evaluate(CalData any, indentMap map[string]Ident, funcMap map[string]parser
 			}
 			floatRight, ok := RightSide.(float64)
 			if ok {
-				return int(floatRight) * left, []string{"int"}
+				return floatRight * float64(left), []string{"float"}
 			}
 			fmt.Println("Cant add two incompadeple types!")
 			os.Exit(1)
@@ -262,11 +263,11 @@ func Evaluate(CalData any, indentMap map[string]Ident, funcMap map[string]parser
 		case int:
 			right, ok := RightSide.(int)
 			if ok {
-				return left / right, []string{"int"}
+				return float64(left) / float64(right), []string{"float"}
 			}
 			right2, ok2 := RightSide.(float64)
 			if ok2 {
-				return left / int(right2), []string{"int"}
+				return float64(left) / float64(right2), []string{"float"}
 			}
 		case float64:
 			right, ok := RightSide.(int)
@@ -305,6 +306,42 @@ func Evaluate(CalData any, indentMap map[string]Ident, funcMap map[string]parser
 			RightValue2, ok2 := RightSide.(float64)
 			if ok2 {
 				return BoolToInt(RightValue2 == left), []string{"int"}
+			}
+		case string:
+			RightValue, ok := RightSide.(string)
+			if ok {
+				return BoolToInt(RightValue == left), []string{"int"}
+			}
+		}
+	case "<":
+		LeftSide, _ := Evaluate(op.Left, indentMap, funcMap, keyFuncs)
+		RightSide, _ := Evaluate(op.Right, indentMap, funcMap, keyFuncs)
+		if !slices.Contains(ApproveSideToOp, ReturnType(LeftSide)) && !slices.Contains(ApproveSideToOp, ReturnType(RightSide)) {
+			fmt.Println("Cant do None type!", ReturnType(LeftSide), ReturnType(RightSide))
+		}
+
+		switch left := LeftSide.(type) {
+		case int:
+			RightValue, ok := RightSide.(int)
+			if ok {
+
+				return BoolToInt(left < RightValue), []string{"int"}
+			}
+
+			RightValue2, ok2 := RightSide.(float64)
+			if ok2 {
+
+				return BoolToInt(float64(left) < RightValue2), []string{"int"}
+			}
+		case float64:
+
+			RightValue, ok := RightSide.(int)
+			if ok {
+				return BoolToInt(left < float64(RightValue)), []string{"int"}
+			}
+			RightValue2, ok2 := RightSide.(float64)
+			if ok2 {
+				return BoolToInt(left < RightValue2), []string{"int"}
 			}
 		}
 	}
@@ -364,7 +401,9 @@ func (Env *Environment) Interpeter() {
 			CallVarMap := map[string]Ident{}
 			TempValues := []any{}
 			for idx, ident := range TempCall.ParimitersInput {
+
 				callEval, _ := Evaluate(ident, Env.VariableMap, Env.FuncMap, Env.Keyfuncs)
+
 				if ok2 {
 					TempValues = append(TempValues, callEval)
 				} else {
@@ -380,7 +419,9 @@ func (Env *Environment) Interpeter() {
 			}
 
 			NewEnv := Environment{ParseDate: CallFunc.Body, VariableMap: CallVarMap, FuncMap: Env.FuncMap, Keyfuncs: Env.Keyfuncs}
+
 			NewEnv.Interpeter()
+
 			Env.Output = append(Env.Output, NewEnv.Output...)
 
 		case ReturnType(parser.Return{}):
@@ -465,6 +506,7 @@ func (Env *Environment) Interpeter() {
 				}
 
 				TempIfPointer = *TempIfPointer.Else
+
 			}
 		}
 	}

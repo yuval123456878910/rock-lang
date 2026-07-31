@@ -30,8 +30,8 @@ const (
 )
 
 var Keywords []string = []string{"func", "import", "int", "string", "float", "var", "const", "list", "dict", "bool", "if", "else", "elseif", "break", "continue", "thread", "return", "maybe", "char", "house"}
-var Operators []byte = []byte{'+', '-', '/', '*', '='}
-var LegalOperators []string = []string{"+", "-", "/", "=", "+=", "-=", "*=", "/="}
+var Operators []byte = []byte{'+', '-', '/', '*', '=', '<', '>'}
+var LegalOperators []string = []string{"+", "-", "/", "=", "+=", "-=", "*=", "/=", "<=", ">="}
 var Punctuators []byte = []byte{'(', ')', '[', ']', '{', '}', ':', ',', '.'}
 
 type Lexer struct {
@@ -163,7 +163,7 @@ func (l *Lexer) IdentifyWord() {
 		}
 		l.Tokens = append(l.Tokens, NewToken)
 
-	} else if (IsNumber(l.SneekPeak()) && l.ch == '-' && (len(l.Tokens) == 0 || l.Tokens[len(l.Tokens)-1].Type == OPERATOR)) || IsNumber(l.ch) {
+	} else if (IsNumber(l.SneekPeak()) && l.ch == '-' && (len(l.Tokens) == 0 || l.Tokens[len(l.Tokens)-1].Type == OPERATOR || l.Tokens[len(l.Tokens)-1].Type != LITERAL)) || IsNumber(l.ch) {
 		var NewToken Token
 
 		StartingPos := l.pos

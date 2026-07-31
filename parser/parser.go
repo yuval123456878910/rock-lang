@@ -431,7 +431,10 @@ func Parse(Tokens []lexer.Token) []any {
 					}
 
 					NewElse.Body = Parse(Tokens[BlockStart3+1 : EndBody3])
-					NewElse.Condition = 1
+					NewElse.Condition = lexer.Token{
+						Value: "1",
+						Type:  lexer.LITERAL,
+					}
 					PointerToIf.Else = &NewElse
 
 					PointerToIf = &NewElse
@@ -483,6 +486,8 @@ var Binding map[string]float32 = map[string]float32{
 	"==": 0,
 	"<=": 0,
 	">=": 0,
+	"<":  0,
+	">":  0,
 	"+":  1,
 	"-":  1,
 	"*":  2,

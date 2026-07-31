@@ -1,14 +1,11 @@
-func Test(int num) (string) {
-    if num == 1 {
-        print("hello")
-        return "YAY"
-    } elseif num == 2 {
-        print("SO")
-        return "OS"
+func Test(int number) () {
+    if 0 < number {
+        print("Posetive")
+    } elseif number < 0 {
+        print("Negetive")
     } else {
-        print("Nothing")
-        return "STOP"
+        print("0")
     }
 }
 
-print("Result:",Test(1))
+Test(0)
