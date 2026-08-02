@@ -1,11 +1,4 @@
-func Test(int number) () {
-    if 0 < number {
-        print("Posetive")
-    } elseif number < 0 {
-        print("Negetive")
-    } else {
-        print("0")
-    }
+var a int = 1
+while a < 10 {
+    a = a + 1
 }
-
-Test(0)

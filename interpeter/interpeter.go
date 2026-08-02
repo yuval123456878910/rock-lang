@@ -26,6 +26,7 @@ var (
 	RefactType      string   = ReturnType(parser.RefactIdent{})
 	HouseType       string   = ReturnType(parser.House{})
 	IfType          string   = ReturnType(parser.IfStm{})
+	WhileType       string   = ReturnType(parser.WhileLoop{})
 )
 
 type Keyfunc func(args ...any) ([]any, string)
@@ -314,6 +315,7 @@ func Evaluate(CalData any, indentMap map[string]Ident, funcMap map[string]parser
 			}
 		}
 	case "<":
+
 		LeftSide, _ := Evaluate(op.Left, indentMap, funcMap, keyFuncs)
 		RightSide, _ := Evaluate(op.Right, indentMap, funcMap, keyFuncs)
 		if !slices.Contains(ApproveSideToOp, ReturnType(LeftSide)) && !slices.Contains(ApproveSideToOp, ReturnType(RightSide)) {
@@ -344,6 +346,39 @@ func Evaluate(CalData any, indentMap map[string]Ident, funcMap map[string]parser
 				return BoolToInt(left < RightValue2), []string{"int"}
 			}
 		}
+	case ">":
+
+		LeftSide, _ := Evaluate(op.Left, indentMap, funcMap, keyFuncs)
+		RightSide, _ := Evaluate(op.Right, indentMap, funcMap, keyFuncs)
+		if !slices.Contains(ApproveSideToOp, ReturnType(LeftSide)) && !slices.Contains(ApproveSideToOp, ReturnType(RightSide)) {
+			fmt.Println("Cant do None type!", ReturnType(LeftSide), ReturnType(RightSide))
+		}
+
+		switch left := LeftSide.(type) {
+		case int:
+			RightValue, ok := RightSide.(int)
+			if ok {
+
+				return BoolToInt(left > RightValue), []string{"int"}
+			}
+
+			RightValue2, ok2 := RightSide.(float64)
+			if ok2 {
+
+				return BoolToInt(float64(left) > RightValue2), []string{"int"}
+			}
+		case float64:
+
+			RightValue, ok := RightSide.(int)
+			if ok {
+				return BoolToInt(left > float64(RightValue)), []string{"int"}
+			}
+			RightValue2, ok2 := RightSide.(float64)
+			if ok2 {
+				return BoolToInt(left > RightValue2), []string{"int"}
+			}
+		}
+
 	}
 	return Value, []string{"null"}
 }
@@ -506,6 +541,23 @@ func (Env *Environment) Interpeter() {
 				}
 
 				TempIfPointer = *TempIfPointer.Else
+
+			}
+		case WhileType:
+			TempWhile := ParseToken.(parser.WhileLoop)
+			Data, Types := Evaluate(TempWhile.Condition, Env.VariableMap, Env.FuncMap, Env.Keyfuncs)
+			if len(Types) > 1 || len(Types) <= 0 || len(Types) == 1 && Types[0] != "int" {
+				fmt.Println("Coudnt load condition!")
+			}
+			for Data.(int) == 1 {
+				NewEnv := NewEnvironment(TempWhile.Body, Env.FuncMap, Env.VariableMap)
+				NewEnv.Interpeter()
+				fmt.Println(Env.VariableMap)
+				if NewEnv.Returned {
+					Env.Output = append(Env.Output, NewEnv.Output...)
+					break
+				}
+				Data, Types = Evaluate(TempWhile.Condition, Env.VariableMap, Env.FuncMap, Env.Keyfuncs)
 
 			}
 		}

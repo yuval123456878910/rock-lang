@@ -46,6 +46,11 @@ type Parser struct {
 	Output []any
 }
 
+type WhileLoop struct {
+	Condition any
+	Body      []any
+}
+
 func (p *Parser) Parsing() {
 	p.Output = Parse(p.Input)
 }
@@ -444,6 +449,25 @@ func Parse(Tokens []lexer.Token) []any {
 			}
 
 			Global_Result = append(Global_Result, NewIf)
+			continue
+		case "while":
+			var NewWhile WhileLoop
+			StartBody, err := SearchStartToken(Tokens, pos, func(item any) any { return item.(lexer.Token).Value }, "{")
+			if err != nil {
+				fmt.Println("Coudnt find start!")
+				os.Exit(1)
+			}
+			StartToken := lexer.Token{Value: "{", Type: lexer.PUNCTUATOR}
+			EndToken := lexer.Token{Value: "}", Type: lexer.PUNCTUATOR}
+			End, err2 := FindNexer(StartBody, Tokens, StartToken, EndToken)
+			if err2 != nil {
+				fmt.Println(err2.Error())
+			}
+			NewExpr := Expretion{Tokens: Tokens[pos+1 : StartBody]}
+
+			NewWhile.Condition = ParseBinding(&NewExpr, 0)
+			NewWhile.Body = Parse(Tokens[StartBody+1 : End])
+			Global_Result = append(Global_Result, NewWhile)
 			continue
 		}
 
