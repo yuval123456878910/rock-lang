@@ -29,7 +29,7 @@ var (
 	WhileType       string   = ReturnType(parser.WhileLoop{})
 )
 
-type Keyfunc func(args ...any) ([]any, string)
+type Keyfunc func(args ...any) (any, []string)
 
 type Environment struct {
 	FuncMap     map[string]parser.Function
@@ -47,7 +47,6 @@ func BoolToInt(Bool bool) int {
 	return 0
 }
 
-
 func NewEnvironment(parseDate []any, funcMap map[string]parser.Function, variableMap map[string]Ident) Environment {
 	TempEnv := Environment{}
 	TempEnv.FuncMap = funcMap
@@ -55,7 +54,7 @@ func NewEnvironment(parseDate []any, funcMap map[string]parser.Function, variabl
 	TempEnv.ParseDate = parseDate
 	TempEnv.Keyfuncs = map[string]Keyfunc{}
 	TempEnv.Returned = false
-	TempEnv.Keyfuncs["print"] = Keyfunc(func(args ...any) ([]any, string) {
+	TempEnv.Keyfuncs["print"] = Keyfunc(func(args ...any) (any, []string) {
 		for _, arg := range args {
 			switch Targ := arg.(type) {
 			case []any:
@@ -67,18 +66,26 @@ func NewEnvironment(parseDate []any, funcMap map[string]parser.Function, variabl
 
 		}
 		fmt.Println()
-		return args, "null"
+		return args, []string{"any"}
 	})
-	TempEnv.Keyfuncs["append"] = func(args ...any) ([]any, string) {
+	TempEnv.Keyfuncs["append"] = func(args ...any) (any, []string) {
 		Data := args[0].([]any)
 		Data = append(Data, args[1])
-		return []any{Data}, "list"
+		return []any{Data}, []string{"list"}
 	}
-	TempEnv.Keyfuncs["look"] = func(args ...any) ([]any, string) {
+	TempEnv.Keyfuncs["look"] = func(args ...any) (any, []string) {
 		Data := args[0].([]any)
 		var temp []any = Data[0].([]any)
-		
-		return []any{temp[args[1].(int)]}, "any"
+		TypeReturn := "any"
+		switch DataReturn := temp[args[1].(int)].(type) {
+		case int:
+			return DataReturn, []string{"int"}
+		case float64:
+			return DataReturn, []string{"float"}
+		case string:
+			return DataReturn, []string{"string"}
+		}
+		return temp[args[1].(int)], []string{TypeReturn}
 	}
 	return TempEnv
 }
@@ -152,7 +159,7 @@ func Evaluate(CalData any, indentMap map[string]Ident, funcMap map[string]parser
 		if funcData, ok3 := keyFuncs[TempCall.Name]; ok3 {
 			l, t := funcData(TempValues...)
 
-			return l, []string{t}
+			return l, t
 		}
 
 		NewEnv := Environment{ParseDate: CallFunc.Body, VariableMap: CallVarMap, FuncMap: funcMap, Keyfuncs: keyFuncs}
@@ -470,7 +477,7 @@ func (Env *Environment) Interpeter() {
 
 			if funcData, ok := Env.Keyfuncs[TempCall.Name]; ok {
 				Result, _ := funcData(TempValues...)
-				Env.Output = append(Env.Output, Result...)
+				Env.Output = append(Env.Output, Result)
 				continue
 			}
 
@@ -532,7 +539,6 @@ func (Env *Environment) Interpeter() {
 				Types = append(Types, typed...)
 			}
 			if len(flattenContexts) != len(Names) || len(Types) != len(Names) {
-				fmt.Println(flattenContexts, Names)
 				fmt.Println("Not every arg has a corospond arg!")
 				os.Exit(1)
 			}
@@ -574,7 +580,6 @@ func (Env *Environment) Interpeter() {
 			for Data.(int) == 1 {
 				NewEnv := NewEnvironment(TempWhile.Body, Env.FuncMap, Env.VariableMap)
 				NewEnv.Interpeter()
-				fmt.Println(Env.VariableMap)
 				if NewEnv.Returned {
 					Env.Output = append(Env.Output, NewEnv.Output...)
 					break
