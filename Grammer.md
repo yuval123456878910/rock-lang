@@ -49,7 +49,19 @@ if [condition]  {
 ```
 
 # While
+```
 while [condition] {
     ...
 }
+```
 There is no break. USE `return`
+
+# Build in list functions
+```
+house NewList = append(<list>, <data>)
+```
+returns the added data to the list \
+```
+house NewItem = look(<list>, <pos>)
+```
+Currentry you cant select the item in the list using [pos]. Insted you do like what i done.
