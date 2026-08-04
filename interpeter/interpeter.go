@@ -47,6 +47,7 @@ func BoolToInt(Bool bool) int {
 	return 0
 }
 
+
 func NewEnvironment(parseDate []any, funcMap map[string]parser.Function, variableMap map[string]Ident) Environment {
 	TempEnv := Environment{}
 	TempEnv.FuncMap = funcMap
@@ -70,11 +71,15 @@ func NewEnvironment(parseDate []any, funcMap map[string]parser.Function, variabl
 	})
 	TempEnv.Keyfuncs["append"] = func(args ...any) ([]any, string) {
 		Data := args[0].([]any)
-		fmt.Println(Data)		
 		Data = append(Data, args[1])
 		return []any{Data}, "list"
 	}
-
+	TempEnv.Keyfuncs["look"] = func(args ...any) ([]any, string) {
+		Data := args[0].([]any)
+		var temp []any = Data[0].([]any)
+		
+		return []any{temp[args[1].(int)]}, "any"
+	}
 	return TempEnv
 }
 

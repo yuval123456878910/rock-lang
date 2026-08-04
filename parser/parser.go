@@ -8,7 +8,7 @@ import (
 )
 
 var aviableTypes []string = []string{
-	"string", "float", "list", "dict", "bool", "char", "int",
+	"string", "float", "list", "dict", "bool", "char", "int", "any",
 }
 
 func FindNexer(StartPos int, Tokens []lexer.Token, startFind lexer.Token, endFind lexer.Token) (int, error) {
@@ -229,7 +229,7 @@ func Parse(Tokens []lexer.Token) []any {
 
 			if index+1 > pos {
 				for idx, perameters := range Tokens[pos+3 : index+1] {
-					if perameters.Type == lexer.KEYWORD && slices.Contains(aviableTypes, perameters.Value) {
+					if perameters.Type == lexer.KEYWORD && slices.Contains(aviableTypes, perameters.Value) && perameters.Value != "any"{
 						TempPar := Parimiter{Type: perameters.Value, Name: Tokens[pos+4:][idx].Value}
 						Current_Result.Perameters = append(Current_Result.Perameters, TempPar)
 					}
