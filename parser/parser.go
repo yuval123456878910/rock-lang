@@ -205,6 +205,10 @@ func Parse(Tokens []lexer.Token) []any {
 			pos = End + 1
 			continue
 		}
+		
+		if Token.Type != lexer.KEYWORD && Token.Type != lexer.OPERATOR {
+			continue
+		}
 		switch Token.Value {
 		case "func":
 			// syntax: func main(int main) (int) {}
@@ -218,7 +222,6 @@ func Parse(Tokens []lexer.Token) []any {
 			StartToken := lexer.Token{Value: "(", Type: lexer.PUNCTUATOR}
 			EndToken := lexer.Token{Value: ")", Type: lexer.PUNCTUATOR}
 			index, err := FindNexer(pos+3, Tokens, StartToken, EndToken)
-
 			if err != nil {
 				fmt.Println("Error: The perameters didnt end!")
 				return nil
@@ -232,24 +235,31 @@ func Parse(Tokens []lexer.Token) []any {
 					}
 				}
 			}
+			for i := range 1 {
 
-			if Tokens[index+2].Value == "(" && Tokens[index+2].Type == lexer.PUNCTUATOR {
+				if Tokens[index+1].Value == "(" && Tokens[index+1].Type == lexer.PUNCTUATOR {
 
-				StartToken2 := lexer.Token{Value: "(", Type: lexer.PUNCTUATOR}
-				EndToken2 := lexer.Token{Value: ")", Type: lexer.PUNCTUATOR}
-				index2, err := FindNexer(index+2, Tokens, StartToken2, EndToken2)
-				if err != nil {
-					fmt.Println("An error had accourd, mayby () didnt closed!")
-					return []any{}
-				}
-				for _, returns := range Tokens[index+3 : index2+1] {
-					if returns.Type == lexer.KEYWORD && slices.Contains(aviableTypes, returns.Value) {
-						Current_Result.Returns = append(Current_Result.Returns, TypeReturn{Type: returns.Value})
-					} else {
-						fmt.Println("You included untype as a return parameter")
+					StartToken2 := lexer.Token{Value: "(", Type: lexer.PUNCTUATOR}
+					EndToken2 := lexer.Token{Value: ")", Type: lexer.PUNCTUATOR}
+					index2, err := FindNexer(index+1, Tokens, StartToken2, EndToken2)
+					if index2-index+1 == 0 {
+						break
+					}
+					fmt.Println(index2 - index + 1)
+					if err != nil {
+						fmt.Println("An error had accourd, mayby () didnt closed!")
 						return []any{}
 					}
+					for _, returns := range Tokens[index+2 : index2] {
+						if returns.Type == lexer.KEYWORD && slices.Contains(aviableTypes, returns.Value) {
+							Current_Result.Returns = append(Current_Result.Returns, TypeReturn{Type: returns.Value})
+						} else {
+							fmt.Println("You included untype as a return parameter")
+							return []any{}
+						}
 
+					}
+					i += 1
 				}
 			}
 

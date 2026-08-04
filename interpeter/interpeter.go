@@ -68,6 +68,12 @@ func NewEnvironment(parseDate []any, funcMap map[string]parser.Function, variabl
 		fmt.Println()
 		return args, "null"
 	})
+	TempEnv.Keyfuncs["append"] = func(args ...any) ([]any, string) {
+		Data := args[0].([]any)
+		fmt.Println(Data)		
+		Data = append(Data, args[1])
+		return []any{Data}, "list"
+	}
 
 	return TempEnv
 }
@@ -107,6 +113,16 @@ func Evaluate(CalData any, indentMap map[string]Ident, funcMap map[string]parser
 			TempIdent := CalData.(lexer.Token)
 			return indentMap[TempIdent.Value].Value, []string{indentMap[TempIdent.Value].Type}
 		}
+	case ReturnType(parser.List{}):
+		TempList := CalData.(parser.List)
+		NewList := []any{}
+		NewTypes := []string{}
+		for _, item := range TempList.Items {
+			NewItems, NewType := Evaluate(item, indentMap, funcMap, keyFuncs)
+			NewList = append(NewList, NewItems)
+			NewTypes = append(NewTypes, NewType...)
+		}
+		return NewList, NewTypes
 	case ReturnType(parser.CallFunction{}):
 		TempCall := CalData.(parser.CallFunction)
 
@@ -511,6 +527,7 @@ func (Env *Environment) Interpeter() {
 				Types = append(Types, typed...)
 			}
 			if len(flattenContexts) != len(Names) || len(Types) != len(Names) {
+				fmt.Println(flattenContexts, Names)
 				fmt.Println("Not every arg has a corospond arg!")
 				os.Exit(1)
 			}
