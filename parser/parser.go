@@ -205,7 +205,7 @@ func Parse(Tokens []lexer.Token) []any {
 			pos = End + 1
 			continue
 		}
-		
+
 		if Token.Type != lexer.KEYWORD && Token.Type != lexer.OPERATOR {
 			continue
 		}
@@ -229,7 +229,7 @@ func Parse(Tokens []lexer.Token) []any {
 
 			if index+1 > pos {
 				for idx, perameters := range Tokens[pos+3 : index+1] {
-					if perameters.Type == lexer.KEYWORD && slices.Contains(aviableTypes, perameters.Value) && perameters.Value != "any"{
+					if perameters.Type == lexer.KEYWORD && slices.Contains(aviableTypes, perameters.Value) && perameters.Value != "any" {
 						TempPar := Parimiter{Type: perameters.Value, Name: Tokens[pos+4:][idx].Value}
 						Current_Result.Perameters = append(Current_Result.Perameters, TempPar)
 					}
@@ -245,7 +245,6 @@ func Parse(Tokens []lexer.Token) []any {
 					if index2-index+1 == 0 {
 						break
 					}
-					fmt.Println(index2 - index + 1)
 					if err != nil {
 						fmt.Println("An error had accourd, mayby () didnt closed!")
 						return []any{}

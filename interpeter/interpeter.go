@@ -71,13 +71,13 @@ func NewEnvironment(parseDate []any, funcMap map[string]parser.Function, variabl
 	TempEnv.Keyfuncs["append"] = func(args ...any) (any, []string) {
 		Data := args[0].([]any)
 		Data = append(Data, args[1])
-		return []any{Data}, []string{"list"}
+		return Data, []string{"list"}
 	}
 	TempEnv.Keyfuncs["look"] = func(args ...any) (any, []string) {
 		Data := args[0].([]any)
-		var temp []any = Data[0].([]any)
+
 		TypeReturn := "any"
-		switch DataReturn := temp[args[1].(int)].(type) {
+		switch DataReturn := Data[args[1].(int)].(type) {
 		case int:
 			return DataReturn, []string{"int"}
 		case float64:
@@ -85,7 +85,7 @@ func NewEnvironment(parseDate []any, funcMap map[string]parser.Function, variabl
 		case string:
 			return DataReturn, []string{"string"}
 		}
-		return temp[args[1].(int)], []string{TypeReturn}
+		return Data[args[1].(int)], []string{TypeReturn}
 	}
 	return TempEnv
 }
@@ -567,7 +567,9 @@ func (Env *Environment) Interpeter() {
 					}
 					break
 				}
-
+				if TempIfPointer.Else == nil {
+					break
+				}
 				TempIfPointer = *TempIfPointer.Else
 
 			}
