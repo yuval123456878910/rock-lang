@@ -1,27 +1,67 @@
-## rocks
+# Rocks proggraming launguage
 
-This is rocks proggraming laungauge it is still in beta and doesnt have the most pupular futures!
-\
-__WARNING: Ai helped me with this project because I didnt wached a toturial__
-\
-current futures:
-\
-functions - parsale
-\
-var, const - almost finished
-\
-reach - isnt implemented in the compiler
-\
-return - almost finished
-\
-**functions:** \
-func |name|(parameter <type name>) (<return types, currently it is only capeble of returning one type>){ 
+# Print hello world:
+```
+print("hello word")
+```
+
+# Set varubles
+```
+var a int = 4
+const b int = 10
+house c = 10 
+```
+avaible types: string, int, float \
+**House** is auto type but always mutible
+
+# Func
+```
+func name(int num) (string) {
+    ...
 }
-\
-**return:** \
-return |ONE PERAMETER IS CURRENTLY AVAIBLE|
-\
-**var / const:** \
-var/const name type = |value|
+```
+condition: [type] [name]
 
+# Reach
+```
+reach "hello.ro"
+```
+reach [path]
 
+# Return
+```
+return 1, "2"
+```
+return [data]
+
+# Conditions
+All condtions are integers: 10 > 1 = 1
+
+# If-Elseif-Else
+```
+if [condition]  {
+    ...
+} elseif [condition] {
+    ...
+} else {
+    ...
+}
+```
+
+# While
+```
+while [condition] {
+    ...
+}
+```
+There is no break. USE `return`
+
+# Build in list functions
+```
+house NewList = append(<list>, <data>)
+```
+returns the added data to the list \
+```
+house NewItem = look(<list>, <pos>)
+```
+Currentry you cant select the item in the list using [pos]. Insted you do like what i done.
