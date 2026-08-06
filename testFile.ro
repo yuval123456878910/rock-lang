@@ -1,18 +1,2 @@
-# add empty list sepport
-func insert(list tolist int length int pos int data) (list) {
-    var new_list list = []
-    var cpos int = 0
-    while cpos+1 < length {
-        var temp int = look(tolist, cpos)
-        if cpos == pos {
-            new_list = append(new_list, data)
-
-        }
-        new_list = append(new_list, temp)
-        cpos = cpos +  1
-
-    }
-    return new_list
-}
-var li list = [1,2,3,4]
-print(insert(li, 4, 3, 1))
+reach "$/testFile2.ro"
+print(shark(0))

@@ -1,0 +1,10 @@
+func shark(int num) (string) {
+    if num == 1 {
+        return "SHARK"
+    } elseif num == 0 {
+        return "ROCK"
+    } else {
+        return "KNOWN"
+    }
+    return "erroor"
+}

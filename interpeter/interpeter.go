@@ -6,6 +6,7 @@ add two set
 
 import (
 	"fmt"
+	"io"
 	"math"
 	"os"
 	"rocks/lexer"
@@ -28,6 +29,8 @@ var (
 	IfType          string   = ReturnType(parser.IfStm{})
 	WhileType       string   = ReturnType(parser.WhileLoop{})
 )
+
+var ReachImported []string = []string{}
 
 type Keyfunc func(args ...any) (any, []string)
 
@@ -574,6 +577,41 @@ func (Env *Environment) Interpeter() {
 				TempIfPointer = *TempIfPointer.Else
 
 			}
+		case ReachType:
+			TempReach := ParseToken.(parser.Reach)
+			Path := TempReach.Path
+			fmt.Println(Path)
+			Cpath, err := os.Getwd()
+			if err != nil {
+				fmt.Println("Error: coudnt load the current dirrectory!", Path)
+				os.Exit(1)
+			}
+			Path = strings.ReplaceAll(Path, "$", Cpath)
+			if slices.Contains(ReachImported, Path) {
+				fmt.Println("You dont need to reach (import) the same file!", Path)
+				continue
+			}
+			file, err2 := os.Open(Path)
+			if err2 != nil {
+				fmt.Println("Codunt load the file!")
+				os.Exit(1)
+			}
+			defer file.Close()
+			TextByte, err3 := io.ReadAll(file)
+			if err3 != nil {
+				fmt.Println("Coudnt load the context from the file!")
+				os.Exit(1)
+			}
+			NewText := string(TextByte)
+			// here is the parsing and tokenizing
+			LexerProsses := lexer.Lexer{Input: NewText}
+			LexerProsses.LexerAll()
+			LexerProsses.AddEOF()
+
+			ParserProsses := parser.Parse(LexerProsses.Tokens)
+			Env.ParseDate = slices.Insert(Env.ParseDate, i+1, ParserProsses...)
+			ReachImported = append(ReachImported, Path)
+			continue
 		case WhileType:
 			TempWhile := ParseToken.(parser.WhileLoop)
 			Data, Types := Evaluate(TempWhile.Condition, Env.VariableMap, Env.FuncMap, Env.Keyfuncs)

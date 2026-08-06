@@ -24,9 +24,10 @@ condition: [type] [name]
 
 # Reach
 ```
-reach "hello.ro"
+reach "$/hello.ro"
 ```
-reach [path]
+reach [path] \
+for current directory you put "$" inside the reach. ONLY IN REACH!
 
 # Return
 ```
