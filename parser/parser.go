@@ -644,7 +644,6 @@ func ParseBinding(Express *Expretion, min_bind float32) any {
 			TempExpress := Expretion{Tokens: Temped}
 			NewList.Items = append(NewList.Items, ParseBinding(&TempExpress, 0))
 		}
-		fmt.Println("FAA", Temped)
 		Leftside = NewList
 		Express.Pos = End + 1
 
