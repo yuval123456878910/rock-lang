@@ -1,7 +1,6 @@
 # add empty list sepport
-
 func insert(list tolist int length int pos int data) (list) {
-    var new_list list = [0]
+    var new_list list = []
     var cpos int = 0
     while cpos+1 < length {
         var temp int = look(tolist, cpos)

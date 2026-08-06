@@ -126,6 +126,7 @@ func Evaluate(CalData any, indentMap map[string]Ident, funcMap map[string]parser
 			return indentMap[TempIdent.Value].Value, []string{indentMap[TempIdent.Value].Type}
 		}
 	case ReturnType(parser.List{}):
+
 		TempList := CalData.(parser.List)
 		NewList := []any{}
 		NewTypes := []string{}

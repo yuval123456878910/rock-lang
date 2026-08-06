@@ -594,6 +594,7 @@ func ParseBinding(Express *Expretion, min_bind float32) any {
 			TempExpress := Expretion{Tokens: CurrentArg}
 			Call.ParimitersInput = append(Call.ParimitersInput, ParseBinding(&TempExpress, 0))
 		}
+
 		Leftside = Call
 		Express.Pos = End + 1
 	} else if Leftside.(lexer.Token).Value == "(" {
@@ -615,7 +616,7 @@ func ParseBinding(Express *Expretion, min_bind float32) any {
 		Temped := []lexer.Token{}
 		var NewList List
 		var InInside int = 0
-		for pos := Express.Pos + 1; pos <= End; pos++ {
+		for pos := Express.Pos + 1; pos <= End-1; pos++ {
 			if InInside > 0 {
 				Temped = append(Temped, Express.Tokens[pos])
 				continue
@@ -627,6 +628,7 @@ func ParseBinding(Express *Expretion, min_bind float32) any {
 			} else if Express.Tokens[pos].Value == "]" {
 				InInside--
 				Temped = append(Temped, Express.Tokens[pos])
+				fmt.Println("TE")
 				continue
 			}
 			if Express.Tokens[pos].Value == "," && Express.Tokens[pos].Type == lexer.PUNCTUATOR {
@@ -642,6 +644,7 @@ func ParseBinding(Express *Expretion, min_bind float32) any {
 			TempExpress := Expretion{Tokens: Temped}
 			NewList.Items = append(NewList.Items, ParseBinding(&TempExpress, 0))
 		}
+		fmt.Println("FAA", Temped)
 		Leftside = NewList
 		Express.Pos = End + 1
 
