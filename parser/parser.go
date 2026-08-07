@@ -8,7 +8,7 @@ import (
 )
 
 var aviableTypes []string = []string{
-	"string", "float", "list", "dict", "bool", "char", "int", "any",
+	"string", "float", "list", "dict", "char", "int", "any",
 }
 
 func FindNexer(StartPos int, Tokens []lexer.Token, startFind lexer.Token, endFind lexer.Token) (int, error) {
@@ -92,6 +92,13 @@ type IfStm struct {
 	Condition any
 	Body      []any
 	Else      *IfStm
+}
+
+type Await struct {
+	ThreadHandle any
+}
+
+type Break struct {
 }
 
 func SearchStartToken(Array []lexer.Token, Start int, funcApply func(item any) any, Item any) (int, error) {
@@ -267,7 +274,7 @@ func Parse(Tokens []lexer.Token) []any {
 			StartBodyIdx, errBefor := SearchStartToken(Tokens, pos, func(item any) any { return item.(lexer.Token).Value }, "{")
 
 			if errBefor != nil {
-				fmt.Println("Codnt find start!")
+				fmt.Println("Couldnt find start!")
 			}
 			StartToken2 := lexer.Token{Value: "{", Type: lexer.PUNCTUATOR}
 			EndToken2 := lexer.Token{Value: "}", Type: lexer.PUNCTUATOR}
@@ -355,6 +362,7 @@ func Parse(Tokens []lexer.Token) []any {
 				NewExpr := Expretion{Tokens: context}
 				TempContextBinding = append(TempContextBinding, ParseBinding(&NewExpr, 0))
 			}
+
 			house.Contents = TempContextBinding
 			Vars := []string{}
 			for _, token := range VarsTokens {
@@ -479,7 +487,10 @@ func Parse(Tokens []lexer.Token) []any {
 			NewWhile.Condition = ParseBinding(&NewExpr, 0)
 			NewWhile.Body = Parse(Tokens[StartBody+1 : End])
 			Global_Result = append(Global_Result, NewWhile)
+			pos = End
 			continue
+		case "break":
+			Global_Result = append(Global_Result, Break{})
 		}
 
 	}
@@ -517,16 +528,8 @@ func IsExpress(token lexer.Token) bool {
 	return token.Type == lexer.OPERATOR || token.Type == lexer.IDENTIFIER || token.Type == lexer.LITERAL
 }
 
-var Binding map[string]float32 = map[string]float32{
-	"==": 0,
-	"<=": 0,
-	">=": 0,
-	"<":  0,
-	">":  0,
-	"+":  1,
-	"-":  1,
-	"*":  2,
-	"/":  2,
+type Thread struct {
+	Content CallFunction
 }
 
 func RetriveBinding(Value string) float32 {
@@ -566,6 +569,20 @@ type UnaryOp struct {
 	Value any
 }
 
+var Binding map[string]float32 = map[string]float32{
+	"thread": 0,
+	"await":  0,
+	"==":     0,
+	"<=":     0,
+	">=":     0,
+	"<":      0,
+	">":      0,
+	"+":      1,
+	"-":      1,
+	"*":      2,
+	"/":      2,
+}
+
 // error in the ParseBinding has to start at 2
 func ParseBinding(Express *Expretion, min_bind float32) any {
 
@@ -595,6 +612,25 @@ func ParseBinding(Express *Expretion, min_bind float32) any {
 			return Leftside
 		}
 
+	} else if CurrentToken.Type == lexer.KEYWORD && CurrentToken.Value == "thread" {
+
+		Express.Next()
+
+		var Rightside any = ParseBinding(Express, RetriveBinding(CurrentToken.Value)+1)
+		call, ok := Rightside.(CallFunction)
+		if !ok {
+			fmt.Println("Thread can't accept other than a functions call!")
+		}
+		Leftside = Thread{Content: call}
+		return Leftside
+
+	} else if CurrentToken.Type == lexer.KEYWORD && CurrentToken.Value == "await" {
+		Express.Next()
+		Leftside := Await{ThreadHandle: ParseBinding(Express, RetriveBinding(CurrentToken.Value)+1)}
+		fmt.Println(Leftside)
+		if Express.Pos >= len(Express.Tokens) {
+			return Leftside
+		}
 	} else if Leftside.(lexer.Token).Type == lexer.IDENTIFIER && Express.Pos+1 < len(Express.Tokens) && Express.Tokens[Express.Pos+1].Value == "(" {
 		End, err := FindClose(Express.Tokens, Express.Pos+2, "(", ")")
 		if err != nil {

@@ -5,6 +5,14 @@
 print("hello word")
 ```
 
+# commets
+```
+# - for one line
+#!
+    for multipale lines
+!#
+```
+
 # Set varubles
 ```
 var a int = 4
@@ -16,19 +24,23 @@ avaible types: string, int, float \
 
 # Func
 ```
-func name(int num) (string) {
+func name(int num float num2) (string int) {
     ...
 }
 ```
-condition: [type] [name]
+condition: [type] [name] /
+no need for "," in perameters and return values
 
 # Reach
 ```
 reach "$/hello.ro"
 ```
 reach [path] \
-for current directory you put "$" inside the reach. ONLY IN REACH!
-
+For current directory you put "$" inside the reach. ONLY IN REACH! \
+You can also put a link to a file online:
+```
+reach "http://...."
+```
 # Return
 ```
 return 1, "2"
@@ -55,7 +67,7 @@ while [condition] {
     ...
 }
 ```
-There is no break. USE `return`
+use `break` to stop
 
 # Build in list functions
 ```
@@ -66,3 +78,14 @@ returns the added data to the list \
 house NewItem = look(<list>, <pos>)
 ```
 Currentry you cant select the item in the list using [pos]. Insted you do like what i done.
+
+# Thread/Await
+Decleration of a thread:
+```
+House mythread = thread [function]
+```
+To access the thread return values you do:
+```
+House [values] = await mythread
+```
+**YOU ONLY CAN USE THE HOUSE KEYWORD!**

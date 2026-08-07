@@ -1,2 +1,11 @@
-reach "$/testFile2.ro"
-print(shark(0))
+var num int = 10
+var start int = 1
+#!
+print(1)
+!#
+
+while num > 0 {
+    num = num - 1
+    
+}
+print(num)

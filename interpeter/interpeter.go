@@ -8,13 +8,28 @@ import (
 	"fmt"
 	"io"
 	"math"
+	"net/http"
+	"net/url"
 	"os"
 	"rocks/lexer"
-	parser "rocks/parser"
+	"rocks/parser"
 	"slices"
 	"strconv"
 	"strings"
 )
+
+func IsLink(text string) bool {
+	data, err := url.ParseRequestURI(text)
+	if err != nil {
+		return false
+	}
+	return (data.Scheme == "https" || data.Scheme == "http") && data.Host != ""
+}
+
+type ThreadChannel struct {
+	Values any
+	Types  []string
+}
 
 var (
 	FuncType        string   = ReturnType(parser.Function{})
@@ -29,6 +44,9 @@ var (
 	IfType          string   = ReturnType(parser.IfStm{})
 	WhileType       string   = ReturnType(parser.WhileLoop{})
 	UnaryOpType     string   = ReturnType(parser.UnaryOp{})
+	ThreadType      string   = ReturnType(parser.Thread{})
+	AwaitType       string   = ReturnType(parser.Await{})
+	BreakType       string   = ReturnType(parser.Break{})
 )
 
 var ReachImported []string = []string{}
@@ -42,6 +60,7 @@ type Environment struct {
 	Output      []any
 	Keyfuncs    map[string]Keyfunc
 	Returned    bool
+	Breaked     bool
 }
 
 func BoolToInt(Bool bool) int {
@@ -58,6 +77,7 @@ func NewEnvironment(parseDate []any, funcMap map[string]parser.Function, variabl
 	TempEnv.ParseDate = parseDate
 	TempEnv.Keyfuncs = map[string]Keyfunc{}
 	TempEnv.Returned = false
+	TempEnv.Breaked = false
 	TempEnv.Keyfuncs["print"] = Keyfunc(func(args ...any) (any, []string) {
 		for _, arg := range args {
 			switch Targ := arg.(type) {
@@ -128,6 +148,9 @@ func Evaluate(CalData any, indentMap map[string]Ident, funcMap map[string]parser
 		case lexer.IDENTIFIER:
 			TempIdent := CalData.(lexer.Token)
 			return indentMap[TempIdent.Value].Value, []string{indentMap[TempIdent.Value].Type}
+		case lexer.NEWLINE:
+
+			return []any{}, []string{}
 		}
 	case ReturnType(parser.List{}):
 
@@ -188,6 +211,29 @@ func Evaluate(CalData any, indentMap map[string]Ident, funcMap map[string]parser
 			os.Exit(1)
 		}
 		return Value, []string{}
+	case ThreadType:
+
+		TempThread := CalData.(parser.Thread)
+		Func := TempThread.Content
+		ch := make(chan ThreadChannel)
+		go func() {
+			vals, types := Evaluate(Func, indentMap, funcMap, keyFuncs)
+			ch <- ThreadChannel{Values: vals, Types: types}
+			close(ch)
+		}()
+		var ReturnedData <-chan ThreadChannel = ch
+		return []any{ReturnedData}, []string{"thread"}
+	case AwaitType:
+		TempAwait := CalData.(parser.Await)
+		Ident := TempAwait.ThreadHandle.(lexer.Token)
+		IdentData := indentMap[Ident.Value]
+		if IdentData.Type != "thread" {
+			fmt.Println("You gave a none thread type variable!", IdentData.Name)
+		}
+		ch := IdentData.Value.(<-chan ThreadChannel)
+
+		resultData := <-ch
+		return resultData.Values, resultData.Types
 
 	}
 	op, ok := CalData.(parser.Oporation)
@@ -458,6 +504,9 @@ func (Env *Environment) Interpeter() {
 
 		case ReturnType(lexer.Token{}):
 			token := ParseToken.(lexer.Token)
+			if token.Type == lexer.NEWLINE {
+				continue
+			}
 			if token.Type == lexer.IDENTIFIER {
 				val, ok := Env.VariableMap[token.Value]
 				if !ok {
@@ -592,8 +641,34 @@ func (Env *Environment) Interpeter() {
 
 			}
 		case ReachType:
+
 			TempReach := ParseToken.(parser.Reach)
 			Path := TempReach.Path
+			if IsLink(Path) {
+				Data, err := http.Get(Path)
+				if err != nil {
+					fmt.Println("Coudnt load online file!")
+					os.Exit(1)
+				}
+				defer Data.Body.Close()
+				if Data.StatusCode != http.StatusOK {
+					fmt.Println("Couldn't load file from the internet! Error code:", Data.StatusCode)
+					os.Exit(1)
+				}
+				data, err2 := io.ReadAll(Data.Body)
+				if err2 != nil {
+					fmt.Println("Couldn't load file content!", Path)
+				}
+				NewText := string(data)
+				// here is the parsing and tokenizing
+				LexerProsses := lexer.Lexer{Input: NewText}
+				LexerProsses.LexerAll()
+				LexerProsses.AddEOF()
+				ParserProsses := parser.Parse(LexerProsses.Tokens)
+				Env.ParseDate = slices.Insert(Env.ParseDate, i+1, ParserProsses...)
+				ReachImported = append(ReachImported, Path)
+				continue
+			}
 			Cpath, err := os.Getwd()
 			if err != nil {
 				fmt.Println("Error: coudnt load the current dirrectory!", Path)
@@ -632,15 +707,25 @@ func (Env *Environment) Interpeter() {
 				fmt.Println("Coudnt load condition!")
 			}
 			for Data.(int) == 1 {
+				// FIX: Pass Env.VariableMap directly so mutated variables persist inside the loop
+				
 				NewEnv := NewEnvironment(TempWhile.Body, Env.FuncMap, Env.VariableMap)
 				NewEnv.Interpeter()
+
+				// FIX: If return triggered inside while loop, exit the entire block
 				if NewEnv.Returned {
+					Env.Output = append(Env.Output, NewEnv.Output...)
+					Env.Returned = true
+					return
+				}
+				if NewEnv.Breaked {
 					Env.Output = append(Env.Output, NewEnv.Output...)
 					break
 				}
 				Data, Types = Evaluate(TempWhile.Condition, Env.VariableMap, Env.FuncMap, Env.Keyfuncs)
-
 			}
+		case BreakType:
+			Env.Breaked = true
 		}
 	}
 
