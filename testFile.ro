@@ -2,6 +2,7 @@ var num int = 10
 var start int = 1
 #!
 print(1)
+sup
 !#
 
 while num > 0 {
