@@ -198,7 +198,9 @@ func Parse(Tokens []lexer.Token) []any {
 
 			}
 			if len(CurrentArg) > 0 {
+
 				TempExpress := Expretion{Tokens: CurrentArg}
+
 				Call.ParimitersInput = append(Call.ParimitersInput, ParseBinding(&TempExpress, 0))
 			}
 			Global_Result = append(Global_Result, Call)
@@ -559,10 +561,41 @@ type List struct {
 	Items []any
 }
 
+type UnaryOp struct {
+	Op    string
+	Value any
+}
+
 // error in the ParseBinding has to start at 2
 func ParseBinding(Express *Expretion, min_bind float32) any {
+
 	Leftside := any(Express.Tokens[Express.Pos])
-	if Leftside.(lexer.Token).Type == lexer.IDENTIFIER && Express.Pos+1 < len(Express.Tokens) && Express.Tokens[Express.Pos+1].Value == "(" {
+	CurrentToken := Express.Tokens[Express.Pos]
+
+	if IsOporator(CurrentToken) && (CurrentToken.Value == "-" || CurrentToken.Value == "+") {
+		op := CurrentToken.Value
+		Express.Next() // Consume the operator ('-')
+
+		// Define a high precedence binding power for unary operators
+		// so `-1 + 2` parses as `(-1) + 2` instead of `-(1 + 2)`
+		unaryBindingPower := float32(3)
+
+		right := ParseBinding(Express, unaryBindingPower)
+
+		// Representing unary operation using UnaryOp (or Oporation with nil Left)
+		leftsideResult := UnaryOp{
+			Op:    op,
+			Value: right,
+		}
+
+		// If the unary operator was at the top level, return its result
+		// Otherwise, continue into the operator loop using leftsideResult
+		Leftside = leftsideResult
+		if Express.Pos >= len(Express.Tokens) {
+			return Leftside
+		}
+
+	} else if Leftside.(lexer.Token).Type == lexer.IDENTIFIER && Express.Pos+1 < len(Express.Tokens) && Express.Tokens[Express.Pos+1].Value == "(" {
 		End, err := FindClose(Express.Tokens, Express.Pos+2, "(", ")")
 		if err != nil {
 			fmt.Println("Error: End of the call funcion wasnt found!")
@@ -628,7 +661,6 @@ func ParseBinding(Express *Expretion, min_bind float32) any {
 			} else if Express.Tokens[pos].Value == "]" {
 				InInside--
 				Temped = append(Temped, Express.Tokens[pos])
-				fmt.Println("TE")
 				continue
 			}
 			if Express.Tokens[pos].Value == "," && Express.Tokens[pos].Type == lexer.PUNCTUATOR {
@@ -657,11 +689,11 @@ func ParseBinding(Express *Expretion, min_bind float32) any {
 			Express.Next()
 			continue
 		}
-
 		if RetriveBinding(CurrentToken.Value) >= float32(min_bind) {
 			Express.Next()
 			var Rightside any = ParseBinding(Express, RetriveBinding(CurrentToken.Value)+1)
 			Leftside = Oporation{Op: CurrentToken.Value, Right: Rightside, Left: Leftside}
+
 		} else {
 			break
 		}

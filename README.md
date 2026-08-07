@@ -1,5 +1,5 @@
 # Rocks proggraming launguage
-
+**This project containes a lot of ai generated content**
 # Print hello world:
 ```
 print("hello word")

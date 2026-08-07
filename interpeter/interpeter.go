@@ -28,6 +28,7 @@ var (
 	HouseType       string   = ReturnType(parser.House{})
 	IfType          string   = ReturnType(parser.IfStm{})
 	WhileType       string   = ReturnType(parser.WhileLoop{})
+	UnaryOpType     string   = ReturnType(parser.UnaryOp{})
 )
 
 var ReachImported []string = []string{}
@@ -174,6 +175,19 @@ func Evaluate(CalData any, indentMap map[string]Ident, funcMap map[string]parser
 			Types = append(Types, value.Type)
 		}
 		return NewEnv.Output, Types
+	case UnaryOpType:
+		TempUnaryOp := CalData.(parser.UnaryOp)
+		Value, _ := Evaluate(TempUnaryOp.Value, indentMap, funcMap, keyFuncs)
+		switch ValType := Value.(type) {
+		case int:
+			return -ValType, []string{"int"}
+		case float64:
+			return -ValType, []string{"float"}
+		default:
+			fmt.Println("Cant negetive a none number type!")
+			os.Exit(1)
+		}
+		return Value, []string{}
 
 	}
 	op, ok := CalData.(parser.Oporation)
@@ -580,7 +594,6 @@ func (Env *Environment) Interpeter() {
 		case ReachType:
 			TempReach := ParseToken.(parser.Reach)
 			Path := TempReach.Path
-			fmt.Println(Path)
 			Cpath, err := os.Getwd()
 			if err != nil {
 				fmt.Println("Error: coudnt load the current dirrectory!", Path)
