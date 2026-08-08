@@ -29,7 +29,7 @@ const (
 	EOF        = "EOF"
 )
 
-var Keywords []string = []string{"func", "reach", "int", "string", "float","any", "var", "const", "list", "dict", "if", "else", "elseif", "break", "continue", "thread","await", "return", "maybe", "char", "house", "while"}
+var Keywords []string = []string{"func", "reach", "int", "string", "float", "any", "var", "const", "list", "dict", "if", "else", "elseif", "break", "continue", "thread", "await", "return", "maybe", "char", "house", "while"}
 var Operators []byte = []byte{'+', '-', '/', '*', '=', '<', '>'}
 var LegalOperators []string = []string{"+", "-", "/", "=", "+=", "-=", "*=", "/=", "<=", ">="}
 var Punctuators []byte = []byte{'(', ')', '[', ']', '{', '}', ':', ',', '.'}
@@ -163,7 +163,7 @@ func (l *Lexer) IdentifyWord() {
 		}
 		l.Tokens = append(l.Tokens, NewToken)
 
-	} else if (IsNumber(l.SneekPeak()) && l.ch == '-' && (len(l.Tokens) == 0 || l.Tokens[len(l.Tokens)-1].Type == OPERATOR || l.Tokens[len(l.Tokens)-1].Type != LITERAL)) || IsNumber(l.ch) {
+	} else if (IsNumber(l.SneekPeak()) && l.ch == '-' && (len(l.Tokens) == 0 || l.Tokens[len(l.Tokens)-1].Type == OPERATOR || (l.Tokens[len(l.Tokens)-1].Type != LITERAL && l.Tokens[len(l.Tokens)-1].Type != IDENTIFIER))) || IsNumber(l.ch) {
 		var NewToken Token
 
 		StartingPos := l.pos
@@ -251,7 +251,7 @@ func (l *Lexer) IdentifyWord() {
 		var NewToken Token
 
 		StartingPos := l.pos
-		for (IsOporator(l.ch) && slices.Contains(LegalOperators, string(l.Input[StartingPos:l.pos])) || IsOporator(l.ch) && l.pos == StartingPos) && l.pos < len(l.Input) {
+		for (IsOporator(l.ch) && slices.Contains(LegalOperators, string(l.Input[StartingPos:l.pos+1])) || IsOporator(l.ch) && l.pos == StartingPos) && l.pos < len(l.Input) {
 			l.Next()
 		}
 		NewToken.Value = string(l.Input[StartingPos:l.pos])

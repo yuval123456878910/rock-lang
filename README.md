@@ -89,3 +89,14 @@ To access the thread return values you do:
 House [values] = await mythread
 ```
 **YOU ONLY CAN USE THE HOUSE KEYWORD!**
+# Scan
+To get an input you use scan keyfunc:
+```
+house Text = scan(<text>)
+```
+
+# How to run?
+Download the files, install go and run:
+```
+go run rock.go <filepath>
+```

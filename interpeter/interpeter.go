@@ -5,6 +5,7 @@ add two set
 */
 
 import (
+	"bufio"
 	"fmt"
 	"io"
 	"math"
@@ -110,6 +111,15 @@ func NewEnvironment(parseDate []any, funcMap map[string]parser.Function, variabl
 			return DataReturn, []string{"string"}
 		}
 		return Data[args[1].(int)], []string{TypeReturn}
+	}
+	TempEnv.Keyfuncs["scan"] = func(args ...any) (any, []string) {
+		Text := args[0].(string)
+		fmt.Print(Text)
+		Scanner := bufio.NewScanner(os.Stdin)
+		if Scanner.Scan() {
+
+		}
+		return Scanner.Text(), []string{"string"}
 	}
 	return TempEnv
 }
@@ -259,7 +269,10 @@ func Evaluate(CalData any, indentMap map[string]Ident, funcMap map[string]parser
 			if ok2 {
 				return right2 + float64(left), []string{"float"}
 			}
-
+			right3, ok3 := RightSide.(byte)
+			if ok3 {
+				return right3 + byte(left), []string{"char"}
+			}
 		case float64:
 			right, ok := RightSide.(int)
 			if ok {
@@ -278,6 +291,16 @@ func Evaluate(CalData any, indentMap map[string]Ident, funcMap map[string]parser
 				fmt.Println("Cant add to a string, a none string", RightSide)
 			}
 			return left + right, []string{"string"}
+		case byte:
+			right, ok := RightSide.(int)
+			if ok {
+				return right + int(left), []string{"int"}
+			}
+			right2, ok2 := RightSide.(byte)
+			if ok2 {
+				return left + right2, []string{"byte"}
+			}
+			fmt.Println("Can't add to a byte a incompatible type!")
 		}
 	case "-":
 		LeftSide, _ := Evaluate(op.Left, indentMap, funcMap, keyFuncs)
@@ -295,6 +318,12 @@ func Evaluate(CalData any, indentMap map[string]Ident, funcMap map[string]parser
 			if ok2 {
 				return float64(left) - right2, []string{"float"}
 			}
+			right3, ok3 := RightSide.(byte)
+			if ok3 {
+				return byte(left) - right3, []string{"byte"}
+			}
+			fmt.Println("Can't added an incompatible type to an integer!")
+			os.Exit(1)
 		case float64:
 			right, ok := RightSide.(int)
 			if ok {
@@ -307,6 +336,18 @@ func Evaluate(CalData any, indentMap map[string]Ident, funcMap map[string]parser
 			fmt.Println("Cant add two incompadeple types!")
 			os.Exit(1)
 
+		case byte:
+
+			right, ok := RightSide.(int)
+			if ok {
+				return int(left) - right, []string{"int"}
+			}
+			right2, ok2 := RightSide.(byte)
+			if ok2 {
+				return left - right2, []string{"byte"}
+			}
+			fmt.Println("Can't substract to a byte a incompatible type!")
+			os.Exit(1)
 		}
 	case "*":
 		LeftSide, _ := Evaluate(op.Left, indentMap, funcMap, keyFuncs)
@@ -708,7 +749,7 @@ func (Env *Environment) Interpeter() {
 			}
 			for Data.(int) == 1 {
 				// FIX: Pass Env.VariableMap directly so mutated variables persist inside the loop
-				
+
 				NewEnv := NewEnvironment(TempWhile.Body, Env.FuncMap, Env.VariableMap)
 				NewEnv.Interpeter()
 
