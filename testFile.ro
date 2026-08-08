@@ -1,4 +1,3 @@
-house num = -0.9
-if num + 1 > 0 {
-    print("YES")
-}
+var list1 list = [1,2,3]
+house a = list1 |> look(1)
+print(a)

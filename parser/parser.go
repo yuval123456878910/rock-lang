@@ -28,6 +28,9 @@ func FindNexer(StartPos int, Tokens []lexer.Token, startFind lexer.Token, endFin
 
 	return 0, fmt.Errorf("The system coudnt find end for '%s', %d", endFind.Value, SkipEnds)
 }
+func ReturnTypeTest(obj any) string {
+	return fmt.Sprintf("%T", obj)
+}
 
 type NewIdent struct {
 	Name    string
@@ -81,6 +84,11 @@ type Moudle struct {
 
 type Return struct {
 	Exprs []any
+}
+
+type Pipe struct {
+	PassTo any
+	Arg    any
 }
 
 type House struct {
@@ -570,17 +578,28 @@ type UnaryOp struct {
 }
 
 var Binding map[string]float32 = map[string]float32{
+	// Assignment / Keyword Operators (Lowest priority)
 	"thread": 0,
 	"await":  0,
-	"==":     0,
-	"<=":     0,
-	">=":     0,
-	"<":      0,
-	">":      0,
-	"+":      1,
-	"-":      1,
-	"*":      2,
-	"/":      2,
+
+	// Pipe Operator (Runs AFTER math and comparisons, but BEFORE assignments)
+	"|>": 1,
+
+	// Comparisons (Run AFTER math, but BEFORE pipes)
+	"==": 2,
+	"!=": 2,
+	"<=": 2,
+	">=": 2,
+	"<":  2,
+	">":  2,
+
+	// Addition & Subtraction
+	"+": 3,
+	"-": 3,
+
+	// Multiplication & Division (Highest priority for operators)
+	"*": 4,
+	"/": 4,
 }
 
 // error in the ParseBinding has to start at 2
@@ -725,7 +744,12 @@ func ParseBinding(Express *Expretion, min_bind float32) any {
 			Express.Next()
 			continue
 		}
-		if RetriveBinding(CurrentToken.Value) >= float32(min_bind) {
+		if RetriveBinding(CurrentToken.Value) >= float32(min_bind) && CurrentToken.Value == "|>" {
+			Express.Next()
+			var Rightside any = ParseBinding(Express, RetriveBinding(CurrentToken.Value)+1)
+			Leftside = Pipe{Arg: Leftside, PassTo: Rightside}
+
+		} else if RetriveBinding(CurrentToken.Value) >= float32(min_bind) {
 			Express.Next()
 			var Rightside any = ParseBinding(Express, RetriveBinding(CurrentToken.Value)+1)
 			Leftside = Oporation{Op: CurrentToken.Value, Right: Rightside, Left: Leftside}

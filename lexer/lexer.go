@@ -30,8 +30,8 @@ const (
 )
 
 var Keywords []string = []string{"func", "reach", "int", "string", "float", "any", "var", "const", "list", "dict", "if", "else", "elseif", "break", "continue", "thread", "await", "return", "maybe", "char", "house", "while"}
-var Operators []byte = []byte{'+', '-', '/', '*', '=', '<', '>'}
-var LegalOperators []string = []string{"+", "-", "/", "=", "+=", "-=", "*=", "/=", "<=", ">="}
+var Operators []byte = []byte{'+', '-', '/', '*', '=', '<', '>', '|'}
+var LegalOperators []string = []string{"+", "-", "/", "=", "+=", "-=", "*=", "/=", "<=", ">=", "|>"}
 var Punctuators []byte = []byte{'(', ')', '[', ']', '{', '}', ':', ',', '.'}
 
 type Lexer struct {

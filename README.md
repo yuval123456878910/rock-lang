@@ -69,6 +69,12 @@ while [condition] {
 ```
 use `break` to stop
 
+# List
+To assine a list you can only use the var keyword, not house because house will assine all the elements to agiven args in house.
+```
+house list1 = [1,2,3] # bad-error
+var list1 list = [1,2,3] # good
+```
 # Build in list functions
 ```
 house NewList = append(<list>, <data>)
@@ -93,6 +99,18 @@ House [values] = await mythread
 To get an input you use scan keyfunc:
 ```
 house Text = scan(<text>)
+```
+
+# Pipe oporation
+to pass an arg to a function with a lot of readability, use '|>'!
+```
+house <name> = <data> |> <function>
+```
+Example:
+```
+var list1 list = [1,2,3]
+house a = list1 |> look(1)
+print(a)
 ```
 
 # How to run?

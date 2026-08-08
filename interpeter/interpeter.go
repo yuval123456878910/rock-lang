@@ -48,6 +48,7 @@ var (
 	ThreadType      string   = ReturnType(parser.Thread{})
 	AwaitType       string   = ReturnType(parser.Await{})
 	BreakType       string   = ReturnType(parser.Break{})
+	PipeType        string   = ReturnType(parser.Pipe{})
 )
 
 var ReachImported []string = []string{}
@@ -244,8 +245,16 @@ func Evaluate(CalData any, indentMap map[string]Ident, funcMap map[string]parser
 
 		resultData := <-ch
 		return resultData.Values, resultData.Types
+	case PipeType:
+		TempPipe := CalData.(parser.Pipe)
+		TempPass := TempPipe.PassTo.(parser.CallFunction)
 
+		TempPass.ParimitersInput = append([]any{TempPipe.Arg}, TempPass.ParimitersInput...)
+		EvalPass, types := Evaluate(TempPass, indentMap, funcMap, keyFuncs)
+
+		return EvalPass, types
 	}
+
 	op, ok := CalData.(parser.Oporation)
 	if !ok {
 		fmt.Println("Cant continue because there is not oporation selected!", CalData)
@@ -635,6 +644,7 @@ func (Env *Environment) Interpeter() {
 			for _, content := range TempHouse.Contents {
 
 				context, typed := Evaluate(content, Env.VariableMap, Env.FuncMap, Env.Keyfuncs)
+
 				Contents = append(Contents, context)
 
 				switch contextType := context.(type) {
@@ -647,7 +657,7 @@ func (Env *Environment) Interpeter() {
 				Types = append(Types, typed...)
 			}
 			if len(flattenContexts) != len(Names) || len(Types) != len(Names) {
-				fmt.Println("Not every arg has a corospond arg!")
+				fmt.Println("Not every arg has a corospond arg! The length are:", len(Names), len(flattenContexts), Names, flattenContexts)
 				os.Exit(1)
 			}
 			for index := range len(Names) {
