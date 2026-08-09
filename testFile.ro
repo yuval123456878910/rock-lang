@@ -1,2 +1,6 @@
-var a dict = {1:"wow", 2:"SUp"}
-print(at(a, 1))
+var a int = 0
+if 1 == 1 {
+    var a int = 1
+}
+
+print(a)

@@ -8,6 +8,7 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"iter"
 	"maps"
 	"math"
 	"net/http"
@@ -141,6 +142,37 @@ type Ident struct {
 	Type    string
 	IsConst bool
 }
+type SaveDataEnv struct {
+	FuncMapNames    []string
+	VariableMapName []string
+}
+
+func LoadSeqKeys(seq iter.Seq[string]) []string {
+	slice := []string{}
+	for key := range seq {
+		slice = append(slice, key)
+	}
+	return slice
+}
+
+func (s *SaveDataEnv) Save(env Environment) {
+	s.VariableMapName = LoadSeqKeys(maps.Keys(env.VariableMap))
+	s.FuncMapNames = LoadSeqKeys(maps.Keys(env.FuncMap))
+}
+
+func LoadNewData[T any](keys []string, data map[string]T) map[string]T {
+	NewVars := map[string]T{}
+	for _, key := range keys {
+
+		NewVars[key] = data[key]
+	}
+	return NewVars
+}
+
+func (s *SaveDataEnv) LoadTo(env *Environment) {
+	env.VariableMap = LoadNewData(s.VariableMapName, env.VariableMap)
+	env.FuncMap = LoadNewData(s.FuncMapNames, env.FuncMap)
+}
 
 func Evaluate(CalData any, indentMap map[string]Ident, funcMap map[string]parser.Function, keyFuncs map[string]Keyfunc) (any, []string) {
 	var Value any
@@ -164,7 +196,12 @@ func Evaluate(CalData any, indentMap map[string]Ident, funcMap map[string]parser
 			return byte(CalData.(lexer.Token).Value[0]), []string{"char"}
 		case lexer.IDENTIFIER:
 			TempIdent := CalData.(lexer.Token)
-			return indentMap[TempIdent.Value].Value, []string{indentMap[TempIdent.Value].Type}
+			Ident, ok := indentMap[TempIdent.Value]
+			if !ok {
+				fmt.Println("Coudnt find a variable named:", TempIdent.Value)
+				os.Exit(1)
+			}
+			return Ident.Value, []string{indentMap[TempIdent.Value].Type}
 		case lexer.NEWLINE:
 
 			return []any{}, []string{}
@@ -453,10 +490,12 @@ func Evaluate(CalData any, indentMap map[string]Ident, funcMap map[string]parser
 		case int:
 			RightValue, ok := RightSide.(int)
 			if ok {
+
 				return BoolToInt(RightValue == left), []string{"int"}
 			}
 			RightValue2, ok2 := RightSide.(float64)
 			if ok2 {
+
 				return BoolToInt(RightValue2 == float64(left)), []string{"int"}
 			}
 		case float64:
@@ -588,6 +627,8 @@ func (Env *Environment) Interpeter() {
 				Env.Output = append(Env.Output, t)
 			}
 		case ReturnType(parser.CallFunction{}):
+			NewSave := SaveDataEnv{}
+			NewSave.Save(*Env)
 			TempCall := ParseToken.(parser.CallFunction)
 
 			CallFunc, ok := Env.FuncMap[TempCall.Name]
@@ -619,7 +660,7 @@ func (Env *Environment) Interpeter() {
 			NewEnv := Environment{ParseDate: CallFunc.Body, VariableMap: CallVarMap, FuncMap: Env.FuncMap, Keyfuncs: Env.Keyfuncs}
 
 			NewEnv.Interpeter()
-
+			NewSave.LoadTo(Env)
 			Env.Output = append(Env.Output, NewEnv.Output...)
 
 		case ReturnType(parser.Return{}):
@@ -695,13 +736,17 @@ func (Env *Environment) Interpeter() {
 				}
 
 				if Values.(int) == 1 {
+					NewSave := SaveDataEnv{}
+					NewSave.Save(*Env)
 					NewEnv := NewEnvironment(TempIfPointer.Body, Env.FuncMap, Env.VariableMap)
 					NewEnv.Interpeter()
 					if NewEnv.Returned {
 						Env.Output = append(Env.Output, NewEnv.Output...)
 						return
 					}
+					NewSave.LoadTo(Env)
 					break
+
 				}
 				if TempIfPointer.Else == nil {
 					break
@@ -770,6 +815,8 @@ func (Env *Environment) Interpeter() {
 			ReachImported = append(ReachImported, Path)
 			continue
 		case WhileType:
+			NewSave := SaveDataEnv{}
+			NewSave.Save(*Env)
 			TempWhile := ParseToken.(parser.WhileLoop)
 			Data, Types := Evaluate(TempWhile.Condition, Env.VariableMap, Env.FuncMap, Env.Keyfuncs)
 			if len(Types) > 1 || len(Types) <= 0 || len(Types) == 1 && Types[0] != "int" {
@@ -793,6 +840,7 @@ func (Env *Environment) Interpeter() {
 				}
 				Data, Types = Evaluate(TempWhile.Condition, Env.VariableMap, Env.FuncMap, Env.Keyfuncs)
 			}
+			NewSave.LoadTo(Env)
 		case BreakType:
 			Env.Breaked = true
 		}
