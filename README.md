@@ -113,6 +113,14 @@ house a = list1 |> look(1)
 print(a)
 ```
 
+# Dict
+```
+var <name> dict = {<item>:<value>}
+```
+to get an item you do this:
+```
+at(<dict_var>, <key>)
+```
 # How to run?
 Download the files, install go and run:
 ```

@@ -1,3 +1,2 @@
-var list1 list = [1,2,3]
-house a = list1 |> look(1)
-print(a)
+var a dict = {1:"wow", 2:"SUp"}
+print(at(a, 1))

@@ -32,6 +32,9 @@ func ReturnTypeTest(obj any) string {
 	return fmt.Sprintf("%T", obj)
 }
 
+type Dictenary struct {
+	Elements map[any]any
+}
 type NewIdent struct {
 	Name    string
 	Type    string
@@ -685,6 +688,41 @@ func ParseBinding(Express *Expretion, min_bind float32) any {
 
 		Leftside = Call
 		Express.Pos = End + 1
+	} else if Leftside.(lexer.Token).Value == "{" && Leftside.(lexer.Token).Type == lexer.PUNCTUATOR {
+		StartItem := lexer.Token{
+			Value: "{",
+			Type:  lexer.PUNCTUATOR,
+		}
+		EndItem := lexer.Token{
+			Value: "}",
+			Type:  lexer.PUNCTUATOR,
+		}
+		Express.Next()
+		EndPos, err := FindNexer(Express.Pos, Express.Tokens, StartItem, EndItem)
+
+		if err != nil {
+			fmt.Println("Coudnt end to the dict!")
+			os.Exit(1)
+		}
+		Seperator := lexer.Token{
+			Value: ",",
+			Type:  lexer.PUNCTUATOR,
+		}
+		ItemsToken := ReturnsSepDouble(Express.Tokens[Express.Pos:EndPos], Seperator)
+		FinishedDict := map[any]any{}
+		AssineToken := lexer.Token{
+			Value: ":",
+			Type:  lexer.PUNCTUATOR,
+		}
+		for _, group := range ItemsToken {
+			assinePos := slices.Index(group, AssineToken)
+			left := Expretion{Tokens: group[Express.Pos-1 : assinePos]}
+			rightExpress := Expretion{Tokens: group[assinePos+1:]}
+			FinishedDict[ParseBinding(&left, 0)] = ParseBinding(&rightExpress, 0)
+		}
+		NewDict := Dictenary{Elements: FinishedDict}
+		Leftside = NewDict
+		Express.Pos = EndPos
 	} else if Leftside.(lexer.Token).Value == "(" {
 		End, err := FindClose(Express.Tokens, Express.Pos+1, "(", ")")
 		if err != nil {

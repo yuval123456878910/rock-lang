@@ -8,6 +8,7 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"maps"
 	"math"
 	"net/http"
 	"net/url"
@@ -49,6 +50,7 @@ var (
 	AwaitType       string   = ReturnType(parser.Await{})
 	BreakType       string   = ReturnType(parser.Break{})
 	PipeType        string   = ReturnType(parser.Pipe{})
+	DictType        string   = ReturnType(parser.Dictenary{})
 )
 
 var ReachImported []string = []string{}
@@ -121,6 +123,10 @@ func NewEnvironment(parseDate []any, funcMap map[string]parser.Function, variabl
 
 		}
 		return Scanner.Text(), []string{"string"}
+	}
+	TempEnv.Keyfuncs["at"] = func(args ...any) (any, []string) {
+		dict := args[0].(map[any]any)
+		return dict[args[1]], []string{"any"}
 	}
 	return TempEnv
 }
@@ -253,6 +259,18 @@ func Evaluate(CalData any, indentMap map[string]Ident, funcMap map[string]parser
 		EvalPass, types := Evaluate(TempPass, indentMap, funcMap, keyFuncs)
 
 		return EvalPass, types
+	case DictType:
+		TempDict := CalData.(parser.Dictenary)
+		Dict := TempDict.Elements
+		Keys := maps.Keys(Dict)
+		NewEvalMap := map[any]any{}
+		for key := range Keys {
+			NewRightEval := Dict[key]
+			RightEval, _ := Evaluate(NewRightEval, indentMap, funcMap, keyFuncs)
+			LeftEval, _ := Evaluate(key, indentMap, funcMap, keyFuncs)
+			NewEvalMap[LeftEval] = RightEval
+		}
+		return NewEvalMap, []string{"dict"}
 	}
 
 	op, ok := CalData.(parser.Oporation)
