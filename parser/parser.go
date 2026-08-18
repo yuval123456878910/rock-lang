@@ -28,6 +28,13 @@ func FindNexer(StartPos int, Tokens []lexer.Token, startFind lexer.Token, endFin
 
 	return 0, fmt.Errorf("The system coudnt find end for '%s', %d", endFind.Value, SkipEnds)
 }
+
+func Panic(Type string, ErrorDecription string) {
+	panic_text := fmt.Sprintf("%s: %s", Type, ErrorDecription)
+	fmt.Println(panic_text)
+	os.Exit(1)
+}
+
 func ReturnTypeTest(obj any) string {
 	return fmt.Sprintf("%T", obj)
 }
@@ -112,6 +119,12 @@ type Await struct {
 type Break struct {
 }
 
+type Struct struct {
+	Name              string
+	Members_Ident     map[string]NewIdent
+	Members_Functions map[string]Function
+}
+
 func SearchStartToken(Array []lexer.Token, Start int, funcApply func(item any) any, Item any) (int, error) {
 	for i := Start; i < len(Array); i++ {
 		if funcApply(Array[i]) == Item {
@@ -129,7 +142,8 @@ func SearchEnd(Tokens []lexer.Token, pos int) int {
 	return End
 }
 
-func ReturnsSepDouble(Tokens []lexer.Token, sep lexer.Token) [][]lexer.Token {
+// add option to skip newline
+func ReturnsSepDouble(Tokens []lexer.Token, sep lexer.Token, SkipNewline bool) [][]lexer.Token {
 	TokenSeperation := [][]lexer.Token{}
 	sepPos := 0
 	Level := 0
@@ -403,14 +417,13 @@ func Parse(Tokens []lexer.Token) []any {
 
 			BlockStart, err := SearchStartToken(Tokens, pos, func(item any) any { return item.(lexer.Token).Value }, "{")
 			if err != nil {
-				fmt.Println("Coudnt find a start to { !")
-				os.Exit(0)
+				Panic("Syntax error", "Coudnt find a start to { !")
+
 			}
 
 			EndBody, err2 := FindNexer(BlockStart, Tokens, StartToken, EndToken)
 			if err2 != nil {
-				fmt.Println(err2.Error())
-				os.Exit(0)
+				Panic("Syntax error", err2.Error())
 			}
 
 			// Condition between 'if' and '{'
@@ -433,14 +446,12 @@ func Parse(Tokens []lexer.Token) []any {
 					var NewIfElse IfStm
 					BlockStart2, err3 := SearchStartToken(Tokens, pos, func(item any) any { return item.(lexer.Token).Value }, "{")
 					if err3 != nil {
-						fmt.Println("Coudnt find a start to { !")
-						os.Exit(0)
+						Panic("Syntax error:", "Coudnt find a start to { !")
 					}
 
 					EndBody2, err4 := FindNexer(BlockStart2, Tokens, StartToken, EndToken)
 					if err4 != nil {
-						fmt.Println(err4.Error())
-						os.Exit(0)
+						Panic("Syntax error", err4.Error())
 					}
 
 					NewExpr2 := Expretion{Tokens: Tokens[pos+1 : BlockStart2]}
@@ -455,14 +466,13 @@ func Parse(Tokens []lexer.Token) []any {
 					var NewElse IfStm
 					BlockStart3, err := SearchStartToken(Tokens, pos, func(item any) any { return item.(lexer.Token).Value }, "{")
 					if err != nil {
-						fmt.Println("Coudnt find a start to { !")
-						os.Exit(0)
+						fmt.Println()
+						Panic("Syntax error", "Coudnt find a start to { !")
 					}
 
 					EndBody3, err5 := FindNexer(BlockStart3, Tokens, StartToken, EndToken)
 					if err5 != nil {
-						fmt.Println("Coudnt find an end to else!")
-						os.Exit(1)
+						Panic("Syntax error", "Coudnt find an end to else!")
 					}
 
 					NewElse.Body = Parse(Tokens[BlockStart3+1 : EndBody3])
@@ -475,7 +485,9 @@ func Parse(Tokens []lexer.Token) []any {
 					PointerToIf = &NewElse
 					pos = EndBody3
 					break loop
+
 				}
+
 			}
 
 			Global_Result = append(Global_Result, NewIf)
@@ -484,8 +496,7 @@ func Parse(Tokens []lexer.Token) []any {
 			var NewWhile WhileLoop
 			StartBody, err := SearchStartToken(Tokens, pos, func(item any) any { return item.(lexer.Token).Value }, "{")
 			if err != nil {
-				fmt.Println("Coudnt find start!")
-				os.Exit(1)
+				Panic("Syntax error", "Coun't find start to the while!")
 			}
 			StartToken := lexer.Token{Value: "{", Type: lexer.PUNCTUATOR}
 			EndToken := lexer.Token{Value: "}", Type: lexer.PUNCTUATOR}
@@ -502,6 +513,38 @@ func Parse(Tokens []lexer.Token) []any {
 			continue
 		case "break":
 			Global_Result = append(Global_Result, Break{})
+		case "struct":
+			NewStruct := Struct{}
+			Name := Tokens[pos+1].Value
+			aviableTypes = append(aviableTypes, Name)
+			NewStruct.Name = Name
+
+			StartBody, err := SearchStartToken(Tokens, pos, func(item any) any { return item.(lexer.Token).Value }, "{")
+			if err != nil {
+				Panic("Syntax error", "Coun't find start to the while!")
+			}
+			StartToken := lexer.Token{Value: "{", Type: lexer.PUNCTUATOR}
+			EndToken := lexer.Token{Value: "}", Type: lexer.PUNCTUATOR}
+			EndOfBody, err2 := FindNexer(StartBody, Tokens, StartToken, EndToken)
+			if err2 != nil {
+				Panic("Syntax error", "Couldn't find the end for the struct!")
+			}
+
+			InputIdentTokens := Tokens[StartBody+1 : EndOfBody]
+			TokensParas := ReturnsSepDouble(InputIdentTokens, lexer.Token{Type: lexer.PUNCTUATOR, Value: ","})
+			fmt.Println(TokensParas)
+			for _, identPars := range TokensParas {
+
+				TypeForStruct := identPars[0].Value
+				NameIdent := identPars[1].Value
+				NewIdentForStruct := NewIdent{
+					Name: NameIdent,
+					Type: TypeForStruct,
+				}
+				NewStruct.Members_Ident[NameIdent] = NewIdentForStruct
+			}
+			fmt.Println(NewStruct)
+			Global_Result = append(Global_Result, NewStruct)
 		}
 
 	}
@@ -701,8 +744,7 @@ func ParseBinding(Express *Expretion, min_bind float32) any {
 		EndPos, err := FindNexer(Express.Pos, Express.Tokens, StartItem, EndItem)
 
 		if err != nil {
-			fmt.Println("Coudnt end to the dict!")
-			os.Exit(1)
+			Panic("Syntax error", "Coudnt end to the dict!")
 		}
 		Seperator := lexer.Token{
 			Value: ",",

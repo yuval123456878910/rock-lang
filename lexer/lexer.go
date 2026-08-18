@@ -29,7 +29,7 @@ const (
 	EOF        = "EOF"
 )
 
-var Keywords []string = []string{"func", "reach", "int", "string", "float", "any", "var", "const", "list", "dict", "if", "else", "elseif", "break", "continue", "thread", "await", "return", "maybe", "char", "house", "while"}
+var Keywords []string = []string{"struct", "func", "reach", "int", "string", "float", "any", "var", "const", "list", "dict", "if", "else", "elseif", "break", "continue", "thread", "await", "return", "char", "house", "while"}
 var Operators []byte = []byte{'+', '-', '/', '*', '=', '<', '>', '|'}
 var LegalOperators []string = []string{"+", "-", "/", "=", "+=", "-=", "*=", "/=", "<=", ">=", "|>", "=="}
 var Punctuators []byte = []byte{'(', ')', '[', ']', '{', '}', ':', ',', '.'}
