@@ -39,6 +39,12 @@ func ReturnTypeTest(obj any) string {
 	return fmt.Sprintf("%T", obj)
 }
 
+func panicNotIdent(token lexer.Token) {
+	if token.Type != lexer.IDENTIFIER {
+		Panic("Syntax error", "cant pass not identifire as one!")
+	}
+}
+
 type Dictenary struct {
 	Elements map[any]any
 }
@@ -142,11 +148,25 @@ func SearchEnd(Tokens []lexer.Token, pos int) int {
 	return End
 }
 
+func SkipEnds(tokens []lexer.Token, pos *int) {
+	for tokens[*pos].Type == lexer.NEWLINE {
+		*pos++
+	}
+
+}
+
 // add option to skip newline
 func ReturnsSepDouble(Tokens []lexer.Token, sep lexer.Token, SkipNewline bool) [][]lexer.Token {
 	TokenSeperation := [][]lexer.Token{}
 	sepPos := 0
 	Level := 0
+	if SkipNewline {
+
+		slices.DeleteFunc(Tokens, func(E lexer.Token) bool {
+			return E.Type == lexer.NEWLINE
+		})
+
+	}
 	for pos := 0; pos < len(Tokens); pos++ {
 		if Tokens[pos] == sep && Level <= 0 {
 			TokenSeperation = append(TokenSeperation, Tokens[sepPos:pos])
@@ -359,7 +379,7 @@ func Parse(Tokens []lexer.Token) []any {
 		case "return":
 			EndLine := SearchEnd(Tokens, pos)
 
-			Contexts := ReturnsSepDouble(Tokens[pos+1:EndLine+1], lexer.Token{Value: ",", Type: lexer.PUNCTUATOR})
+			Contexts := ReturnsSepDouble(Tokens[pos+1:EndLine+1], lexer.Token{Value: ",", Type: lexer.PUNCTUATOR}, false)
 			exprs := []any{}
 			for _, value := range Contexts {
 				tempExp := Expretion{Tokens: value}
@@ -381,7 +401,7 @@ func Parse(Tokens []lexer.Token) []any {
 			}
 			VarsTokens := ReturnsSepOnceTokens(Tokens[pos+1:EqlLocation], lexer.Token{Value: ",", Type: lexer.PUNCTUATOR})
 
-			ContentSlice := ReturnsSepDouble(Tokens[EqlLocation+1:EndLine+1], lexer.Token{Value: ",", Type: lexer.PUNCTUATOR})
+			ContentSlice := ReturnsSepDouble(Tokens[EqlLocation+1:EndLine+1], lexer.Token{Value: ",", Type: lexer.PUNCTUATOR}, false)
 			TempContextBinding := []any{}
 			for _, context := range ContentSlice {
 				NewExpr := Expretion{Tokens: context}
@@ -515,6 +535,8 @@ func Parse(Tokens []lexer.Token) []any {
 			Global_Result = append(Global_Result, Break{})
 		case "struct":
 			NewStruct := Struct{}
+			NewStruct.Members_Ident = map[string]NewIdent{}
+			NewStruct.Members_Functions = map[string]Function{}
 			Name := Tokens[pos+1].Value
 			aviableTypes = append(aviableTypes, Name)
 			NewStruct.Name = Name
@@ -529,14 +551,26 @@ func Parse(Tokens []lexer.Token) []any {
 			if err2 != nil {
 				Panic("Syntax error", "Couldn't find the end for the struct!")
 			}
+			TempPosPointer := StartBody + 1
 
-			InputIdentTokens := Tokens[StartBody+1 : EndOfBody]
-			TokensParas := ReturnsSepDouble(InputIdentTokens, lexer.Token{Type: lexer.PUNCTUATOR, Value: ","})
+			fmt.Println(Tokens[TempPosPointer:EndOfBody])
+			InputIdentTokens := Tokens[TempPosPointer:EndOfBody]
+			if len(InputIdentTokens) == 0 {
+				fmt.Println("Empty struct!")
+				Global_Result = append(Global_Result, NewStruct)
+				continue
+			}
+			TokensParas := ReturnsSepDouble(InputIdentTokens, lexer.Token{Type: lexer.PUNCTUATOR, Value: ","}, false)
+
 			fmt.Println(TokensParas)
 			for _, identPars := range TokensParas {
-
-				TypeForStruct := identPars[0].Value
-				NameIdent := identPars[1].Value
+				StartPosOfDecl := 0
+				SkipEnds(identPars, &StartPosOfDecl)
+				fmt.Println(identPars[StartPosOfDecl:])
+				TypeForStruct := identPars[StartPosOfDecl].Value
+				fmt.Println(Tokens[StartPosOfDecl+1])
+				panicNotIdent(identPars[StartPosOfDecl+1])
+				NameIdent := identPars[StartPosOfDecl+1].Value
 				NewIdentForStruct := NewIdent{
 					Name: NameIdent,
 					Type: TypeForStruct,
@@ -692,7 +726,6 @@ func ParseBinding(Express *Expretion, min_bind float32) any {
 	} else if CurrentToken.Type == lexer.KEYWORD && CurrentToken.Value == "await" {
 		Express.Next()
 		Leftside := Await{ThreadHandle: ParseBinding(Express, RetriveBinding(CurrentToken.Value)+1)}
-		fmt.Println(Leftside)
 		if Express.Pos >= len(Express.Tokens) {
 			return Leftside
 		}
@@ -750,7 +783,7 @@ func ParseBinding(Express *Expretion, min_bind float32) any {
 			Value: ",",
 			Type:  lexer.PUNCTUATOR,
 		}
-		ItemsToken := ReturnsSepDouble(Express.Tokens[Express.Pos:EndPos], Seperator)
+		ItemsToken := ReturnsSepDouble(Express.Tokens[Express.Pos:EndPos], Seperator, false)
 		FinishedDict := map[any]any{}
 		AssineToken := lexer.Token{
 			Value: ":",

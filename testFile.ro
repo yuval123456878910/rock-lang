@@ -1,3 +1,4 @@
-struct MyApp {
-
+struct my_pop {
+    int main, 
+    float yu
 }

@@ -98,12 +98,12 @@ func NewEnvironment(parseDate []any, funcMap map[string]parser.Function, variabl
 		return args, []string{"any"}
 	})
 	TempEnv.Keyfuncs["append"] = func(args ...any) (any, []string) {
-		Data := args[0].([]any)
+		Data := args[0].([]any)[0].([]any)
 		Data = append(Data, args[1])
 		return Data, []string{"list"}
 	}
 	TempEnv.Keyfuncs["look"] = func(args ...any) (any, []string) {
-		Data := args[0].([]any)
+		Data := args[0].([]any)[0].([]any)
 
 		TypeReturn := "any"
 		switch DataReturn := Data[args[1].(int)].(type) {
@@ -216,7 +216,7 @@ func Evaluate(CalData any, indentMap map[string]Ident, funcMap map[string]parser
 			NewList = append(NewList, NewItems)
 			NewTypes = append(NewTypes, NewType...)
 		}
-		return NewList, NewTypes
+		return []any{NewList}, NewTypes
 	case ReturnType(parser.CallFunction{}):
 		TempCall := CalData.(parser.CallFunction)
 
@@ -708,7 +708,14 @@ func (Env *Environment) Interpeter() {
 
 				switch contextType := context.(type) {
 				case []any:
-					flattenContexts = append(flattenContexts, contextType...)
+					if slices.Compare(typed, []string{"list"}) != 0 {
+						flattenContexts = append(flattenContexts, contextType...)
+
+					} else {
+
+						flattenContexts = append(flattenContexts, contextType)
+					}
+
 				default:
 					flattenContexts = append(flattenContexts, contextType)
 				}
