@@ -131,6 +131,11 @@ type Struct struct {
 	Members_Functions map[string]Function
 }
 
+type AccessMethod struct {
+	Object any
+	Method any
+}
+
 func SearchStartToken(Array []lexer.Token, Start int, funcApply func(item any) any, Item any) (int, error) {
 	for i := Start; i < len(Array); i++ {
 		if funcApply(Array[i]) == Item {
@@ -553,7 +558,6 @@ func Parse(Tokens []lexer.Token) []any {
 			}
 			TempPosPointer := StartBody + 1
 
-			fmt.Println(Tokens[TempPosPointer:EndOfBody])
 			InputIdentTokens := Tokens[TempPosPointer:EndOfBody]
 			if len(InputIdentTokens) == 0 {
 				fmt.Println("Empty struct!")
@@ -562,13 +566,10 @@ func Parse(Tokens []lexer.Token) []any {
 			}
 			TokensParas := ReturnsSepDouble(InputIdentTokens, lexer.Token{Type: lexer.PUNCTUATOR, Value: ","}, false)
 
-			fmt.Println(TokensParas)
 			for _, identPars := range TokensParas {
 				StartPosOfDecl := 0
 				SkipEnds(identPars, &StartPosOfDecl)
-				fmt.Println(identPars[StartPosOfDecl:])
 				TypeForStruct := identPars[StartPosOfDecl].Value
-				fmt.Println(Tokens[StartPosOfDecl+1])
 				panicNotIdent(identPars[StartPosOfDecl+1])
 				NameIdent := identPars[StartPosOfDecl+1].Value
 				NewIdentForStruct := NewIdent{
@@ -577,6 +578,7 @@ func Parse(Tokens []lexer.Token) []any {
 				}
 				NewStruct.Members_Ident[NameIdent] = NewIdentForStruct
 			}
+			aviableTypes = append(aviableTypes, Name)
 			fmt.Println(NewStruct)
 			Global_Result = append(Global_Result, NewStruct)
 		}
@@ -664,6 +666,7 @@ var Binding map[string]float32 = map[string]float32{
 
 	// Pipe Operator (Runs AFTER math and comparisons, but BEFORE assignments)
 	"|>": 1,
+	".":  1,
 
 	// Comparisons (Run AFTER math, but BEFORE pipes)
 	"==": 2,
@@ -687,7 +690,12 @@ func ParseBinding(Express *Expretion, min_bind float32) any {
 
 	Leftside := any(Express.Tokens[Express.Pos])
 	CurrentToken := Express.Tokens[Express.Pos]
-
+	if CurrentToken.Type == lexer.IDENTIFIER && Express.Tokens[Express.Pos+1].Value == "." {
+		Express.Next()
+		Express.Next()
+		var Rightside any = ParseBinding(Express, RetriveBinding(CurrentToken.Value)+1)
+		Leftside = AccessMethod{Object: CurrentToken.Value, Method: Rightside}
+	}
 	if IsOporator(CurrentToken) && (CurrentToken.Value == "-" || CurrentToken.Value == "+") {
 		op := CurrentToken.Value
 		Express.Next() // Consume the operator ('-')
@@ -707,9 +715,6 @@ func ParseBinding(Express *Expretion, min_bind float32) any {
 		// If the unary operator was at the top level, return its result
 		// Otherwise, continue into the operator loop using leftsideResult
 		Leftside = leftsideResult
-		if Express.Pos >= len(Express.Tokens) {
-			return Leftside
-		}
 
 	} else if CurrentToken.Type == lexer.KEYWORD && CurrentToken.Value == "thread" {
 
@@ -721,14 +726,11 @@ func ParseBinding(Express *Expretion, min_bind float32) any {
 			fmt.Println("Thread can't accept other than a functions call!")
 		}
 		Leftside = Thread{Content: call}
-		return Leftside
 
 	} else if CurrentToken.Type == lexer.KEYWORD && CurrentToken.Value == "await" {
 		Express.Next()
-		Leftside := Await{ThreadHandle: ParseBinding(Express, RetriveBinding(CurrentToken.Value)+1)}
-		if Express.Pos >= len(Express.Tokens) {
-			return Leftside
-		}
+		Leftside = Await{ThreadHandle: ParseBinding(Express, RetriveBinding(CurrentToken.Value)+1)}
+
 	} else if Leftside.(lexer.Token).Type == lexer.IDENTIFIER && Express.Pos+1 < len(Express.Tokens) && Express.Tokens[Express.Pos+1].Value == "(" {
 		End, err := FindClose(Express.Tokens, Express.Pos+2, "(", ")")
 		if err != nil {

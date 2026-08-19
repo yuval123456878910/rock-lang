@@ -1,4 +1,3 @@
-struct my_pop {
-    int main, 
-    float yu
-}
+struct my_pop {int main, float yu}
+
+var a int = wow.hi

@@ -66,7 +66,10 @@ type Environment struct {
 	Keyfuncs    map[string]Keyfunc
 	Returned    bool
 	Breaked     bool
+	StructMap	map[string]parser.Struct
 }
+
+
 
 func BoolToInt(Bool bool) int {
 	if Bool {
