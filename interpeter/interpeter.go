@@ -35,24 +35,30 @@ type ThreadChannel struct {
 }
 
 var (
-	FuncType        string   = ReturnType(parser.Function{})
-	ReachType       string   = ReturnType(parser.Reach{})
-	NewIdentType    string   = ReturnType(parser.NewIdent{})
-	OporationType   string   = ReturnType(parser.Oporation{})
-	LiteralsLisr    []string = []string{lexer.LITERAL, lexer.CHAR, lexer.STRING}
-	ApproveSideToOp []string = []string{ReturnType(0), ReturnType(0.0), ReturnType(""), ReturnType(byte(0))}
-	IntType         string   = ReturnType(0)
-	RefactType      string   = ReturnType(parser.RefactIdent{})
-	HouseType       string   = ReturnType(parser.House{})
-	IfType          string   = ReturnType(parser.IfStm{})
-	WhileType       string   = ReturnType(parser.WhileLoop{})
-	UnaryOpType     string   = ReturnType(parser.UnaryOp{})
-	ThreadType      string   = ReturnType(parser.Thread{})
-	AwaitType       string   = ReturnType(parser.Await{})
-	BreakType       string   = ReturnType(parser.Break{})
-	PipeType        string   = ReturnType(parser.Pipe{})
-	DictType        string   = ReturnType(parser.Dictenary{})
+	FuncType         string   = ReturnType(parser.Function{})
+	ReachType        string   = ReturnType(parser.Reach{})
+	NewIdentType     string   = ReturnType(parser.NewIdent{})
+	OporationType    string   = ReturnType(parser.Oporation{})
+	LiteralsLisr     []string = []string{lexer.LITERAL, lexer.CHAR, lexer.STRING}
+	ApproveSideToOp  []string = []string{ReturnType(0), ReturnType(0.0), ReturnType(""), ReturnType(byte(0))}
+	IntType          string   = ReturnType(0)
+	RefactType       string   = ReturnType(parser.RefactIdent{})
+	HouseType        string   = ReturnType(parser.House{})
+	IfType           string   = ReturnType(parser.IfStm{})
+	WhileType        string   = ReturnType(parser.WhileLoop{})
+	UnaryOpType      string   = ReturnType(parser.UnaryOp{})
+	ThreadType       string   = ReturnType(parser.Thread{})
+	AwaitType        string   = ReturnType(parser.Await{})
+	BreakType        string   = ReturnType(parser.Break{})
+	PipeType         string   = ReturnType(parser.Pipe{})
+	DictType         string   = ReturnType(parser.Dictenary{})
+	AccessMethodType string   = ReturnType(parser.AccessMethod{})
 )
+
+type StructInstance struct {
+	TypeName string
+	Fields   map[string]any
+}
 
 var ReachImported []string = []string{}
 
@@ -66,10 +72,8 @@ type Environment struct {
 	Keyfuncs    map[string]Keyfunc
 	Returned    bool
 	Breaked     bool
-	StructMap	map[string]parser.Struct
+	StructMap   map[string]parser.Struct
 }
-
-
 
 func BoolToInt(Bool bool) int {
 	if Bool {
@@ -84,6 +88,7 @@ func NewEnvironment(parseDate []any, funcMap map[string]parser.Function, variabl
 	TempEnv.VariableMap = variableMap
 	TempEnv.ParseDate = parseDate
 	TempEnv.Keyfuncs = map[string]Keyfunc{}
+	TempEnv.StructMap = map[string]parser.Struct{}
 	TempEnv.Returned = false
 	TempEnv.Breaked = false
 	TempEnv.Keyfuncs["print"] = Keyfunc(func(args ...any) (any, []string) {
@@ -180,6 +185,7 @@ func (s *SaveDataEnv) LoadTo(env *Environment) {
 func Evaluate(CalData any, indentMap map[string]Ident, funcMap map[string]parser.Function, keyFuncs map[string]Keyfunc) (any, []string) {
 	var Value any
 	CalType := ReturnType(CalData)
+
 	switch CalType {
 	case ReturnType(lexer.Token{}):
 		switch CalData.(lexer.Token).Type {
@@ -255,6 +261,9 @@ func Evaluate(CalData any, indentMap map[string]Ident, funcMap map[string]parser
 			Types = append(Types, value.Type)
 		}
 		return NewEnv.Output, Types
+	case ReturnType(parser.AccessMethod{}):
+		fmt.Println("WOW")
+		return "wow", []string{}
 	case UnaryOpType:
 		TempUnaryOp := CalData.(parser.UnaryOp)
 		Value, _ := Evaluate(TempUnaryOp.Value, indentMap, funcMap, keyFuncs)
@@ -299,6 +308,8 @@ func Evaluate(CalData any, indentMap map[string]Ident, funcMap map[string]parser
 		EvalPass, types := Evaluate(TempPass, indentMap, funcMap, keyFuncs)
 
 		return EvalPass, types
+	case AccessMethodType:
+		fmt.Println("WOW;lkj;kj;kj;lkj;lkj;klj;lkj;lkj")
 	case DictType:
 		TempDict := CalData.(parser.Dictenary)
 		Dict := TempDict.Elements
@@ -602,6 +613,19 @@ func (Env *Environment) Interpeter() {
 
 		case NewIdentType:
 			IdentTemp := ParseToken.(parser.NewIdent)
+			if structDef, isStruct := Env.StructMap[IdentTemp.Type]; isStruct {
+				instance := StructInstance{
+					TypeName: IdentTemp.Type,
+					Fields:   make(map[string]any),
+				}
+				for fieldName := range structDef.Members_Ident {
+					instance.Fields[fieldName] = 0 // Set default field initializers
+				}
+				Env.VariableMap[IdentTemp.Name] = Ident{
+					Value: instance, Name: IdentTemp.Name, Type: IdentTemp.Type,
+				}
+				continue
+			}
 			Result, _ := Evaluate(IdentTemp.Content, Env.VariableMap, Env.FuncMap, Env.Keyfuncs)
 
 			NewIdent := Ident{Value: Result, Name: IdentTemp.Name, Type: IdentTemp.Type, IsConst: IdentTemp.IsConst}
@@ -629,6 +653,9 @@ func (Env *Environment) Interpeter() {
 				t, _ := Evaluate(ParseToken, Env.VariableMap, Env.FuncMap, Env.Keyfuncs)
 				Env.Output = append(Env.Output, t)
 			}
+		case ReturnType(parser.Struct{}):
+			StructReg := ParseToken.(parser.Struct)
+			Env.StructMap[StructReg.Name] = StructReg
 		case ReturnType(parser.CallFunction{}):
 			NewSave := SaveDataEnv{}
 			NewSave.Save(*Env)

@@ -491,7 +491,7 @@ func Parse(Tokens []lexer.Token) []any {
 					var NewElse IfStm
 					BlockStart3, err := SearchStartToken(Tokens, pos, func(item any) any { return item.(lexer.Token).Value }, "{")
 					if err != nil {
-						fmt.Println()
+						
 						Panic("Syntax error", "Coudnt find a start to { !")
 					}
 
@@ -579,7 +579,6 @@ func Parse(Tokens []lexer.Token) []any {
 				NewStruct.Members_Ident[NameIdent] = NewIdentForStruct
 			}
 			aviableTypes = append(aviableTypes, Name)
-			fmt.Println(NewStruct)
 			Global_Result = append(Global_Result, NewStruct)
 		}
 
@@ -690,12 +689,6 @@ func ParseBinding(Express *Expretion, min_bind float32) any {
 
 	Leftside := any(Express.Tokens[Express.Pos])
 	CurrentToken := Express.Tokens[Express.Pos]
-	if CurrentToken.Type == lexer.IDENTIFIER && Express.Tokens[Express.Pos+1].Value == "." {
-		Express.Next()
-		Express.Next()
-		var Rightside any = ParseBinding(Express, RetriveBinding(CurrentToken.Value)+1)
-		Leftside = AccessMethod{Object: CurrentToken.Value, Method: Rightside}
-	}
 	if IsOporator(CurrentToken) && (CurrentToken.Value == "-" || CurrentToken.Value == "+") {
 		op := CurrentToken.Value
 		Express.Next() // Consume the operator ('-')
@@ -855,7 +848,7 @@ func ParseBinding(Express *Expretion, min_bind float32) any {
 	for Express.Pos < len(Express.Tokens) {
 		CurrentToken := Express.Tokens[Express.Pos]
 
-		if !IsOporator(CurrentToken) {
+		if !IsOporator(CurrentToken) && CurrentToken.Value != "." {
 			Express.Next()
 			continue
 		}
@@ -863,7 +856,10 @@ func ParseBinding(Express *Expretion, min_bind float32) any {
 			Express.Next()
 			var Rightside any = ParseBinding(Express, RetriveBinding(CurrentToken.Value)+1)
 			Leftside = Pipe{Arg: Leftside, PassTo: Rightside}
-
+		} else if RetriveBinding(CurrentToken.Value) >= float32(min_bind) && CurrentToken.Value == "." {
+			Express.Next()
+			var Rightside any = ParseBinding(Express, RetriveBinding(CurrentToken.Value)+1)
+			Leftside = AccessMethod{Object: Leftside, Method: Rightside} // Changed from CurrentToken.Value
 		} else if RetriveBinding(CurrentToken.Value) >= float32(min_bind) {
 			Express.Next()
 			var Rightside any = ParseBinding(Express, RetriveBinding(CurrentToken.Value)+1)
