@@ -121,6 +121,20 @@ to get an item you do this:
 ```
 at(<dict_var>, <key>)
 ```
+
+# Struct
+decleration:
+```
+struct <name> {
+    <type> <name>,
+    <type> <name>
+}
+```
+Access:
+```
+<struct var>.<method>
+```
+**WARNING this struct implemeation is not good and i used a lot of ai to create the strcuct.**
 # How to run?
 Download the files, install go and run:
 ```

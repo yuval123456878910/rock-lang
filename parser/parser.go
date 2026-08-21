@@ -5,6 +5,8 @@ import (
 	"os"
 	"rocks/lexer"
 	"slices"
+
+	"github.com/sanity-io/litter"
 )
 
 var aviableTypes []string = []string{
@@ -56,7 +58,7 @@ type NewIdent struct {
 }
 
 type RefactIdent struct {
-	Name    string
+	Object  any
 	Content any
 }
 
@@ -426,11 +428,21 @@ func Parse(Tokens []lexer.Token) []any {
 			if Tokens[pos].Type != lexer.OPERATOR {
 				continue
 			}
-			name := Tokens[pos-1]
+			start := pos - 1
+			for start-1 > 0 && Tokens[start-1].Type != lexer.NEWLINE {
+				start -= 1
+			}
+			fmt.Println(Tokens[start:pos])
+			Expr := Expretion{Tokens: Tokens[start:pos]}
+			Result := ParseBinding(&Expr, 0)
+			litter.Dump(Result)
+			var NewRefactIdent RefactIdent
 			end := SearchEnd(Tokens, pos)
+
 			NewEnv := Expretion{Tokens: Tokens[pos+1 : end]}
 			contect := ParseBinding(&NewEnv, 0)
-			NewRefactIdent := RefactIdent{Name: name.Value, Content: contect}
+			NewRefactIdent = RefactIdent{Object: Result, Content: contect}
+
 			Global_Result = append(Global_Result, NewRefactIdent)
 			pos = end
 			continue
@@ -491,7 +503,7 @@ func Parse(Tokens []lexer.Token) []any {
 					var NewElse IfStm
 					BlockStart3, err := SearchStartToken(Tokens, pos, func(item any) any { return item.(lexer.Token).Value }, "{")
 					if err != nil {
-						
+
 						Panic("Syntax error", "Coudnt find a start to { !")
 					}
 

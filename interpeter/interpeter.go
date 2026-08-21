@@ -57,7 +57,7 @@ var (
 
 type StructInstance struct {
 	TypeName string
-	Fields   map[string]any
+	Fields   map[string]*any
 }
 
 var ReachImported []string = []string{}
@@ -262,8 +262,9 @@ func Evaluate(CalData any, indentMap map[string]Ident, funcMap map[string]parser
 		}
 		return NewEnv.Output, Types
 	case ReturnType(parser.AccessMethod{}):
-		fmt.Println("WOW")
-		return "wow", []string{}
+		NewEnv := Environment{VariableMap: indentMap, FuncMap: funcMap, Keyfuncs: keyFuncs}
+
+		return *ToMethod(CalData.(parser.AccessMethod), NewEnv), []string{"any"}
 	case UnaryOpType:
 		TempUnaryOp := CalData.(parser.UnaryOp)
 		Value, _ := Evaluate(TempUnaryOp.Value, indentMap, funcMap, keyFuncs)
@@ -596,6 +597,33 @@ func Evaluate(CalData any, indentMap map[string]Ident, funcMap map[string]parser
 	return Value, []string{"null"}
 }
 
+func ToMethod(Method parser.AccessMethod, Env Environment) *any {
+	var Result any = &Method
+
+	// 1. Get the Ident from the map
+	mapValue := Env.VariableMap[(*Result.(*parser.AccessMethod)).Object.(lexer.Token).Value]
+
+	// 2. Put it into an 'any' interface variable first
+	var interfaceContainer any = mapValue
+
+	// 3. Now you can safely take the pointer to 'any'
+	var IdentLocation *any = &interfaceContainer
+
+	Final := false
+	for !Final {
+		switch mt := Method.Method.(type) {
+		case lexer.Token:
+			return (*IdentLocation).(Ident).Value.(StructInstance).Fields[mt.Value]
+
+		case parser.AccessMethod:
+			// Note: This assignment will fail if Fields[...], which is likely a *any,
+			// is assigned directly to IdentLocation. Let's make sure it matches.
+			IdentLocation = (*IdentLocation).(Ident).Value.(StructInstance).Fields[mt.Method.(lexer.Token).Value]
+		}
+	}
+	return IdentLocation
+}
+
 func (Env *Environment) Interpeter() {
 	if Env.VariableMap == nil {
 		Env.VariableMap = map[string]Ident{}
@@ -616,10 +644,11 @@ func (Env *Environment) Interpeter() {
 			if structDef, isStruct := Env.StructMap[IdentTemp.Type]; isStruct {
 				instance := StructInstance{
 					TypeName: IdentTemp.Type,
-					Fields:   make(map[string]any),
+					Fields:   make(map[string]*any),
 				}
 				for fieldName := range structDef.Members_Ident {
-					instance.Fields[fieldName] = 0 // Set default field initializers
+					var StartVal any = 0
+					instance.Fields[fieldName] = &StartVal // Set default field initializers
 				}
 				Env.VariableMap[IdentTemp.Name] = Ident{
 					Value: instance, Name: IdentTemp.Name, Type: IdentTemp.Type,
@@ -704,26 +733,35 @@ func (Env *Environment) Interpeter() {
 			return
 
 		case RefactType:
-			// dont mess: Env.VariableMap[NewIdent.Name] = NewIdent
 			TempRefact := ParseToken.(parser.RefactIdent)
-			IdentGet, ok := Env.VariableMap[TempRefact.Name]
-			if !ok {
-				fmt.Printf("Coudnt find a veruble named: %s\n", TempRefact.Name)
-				os.Exit(1)
-			}
-			if IdentGet.IsConst {
-				fmt.Println("Cant edit a const veruble: ", TempRefact.Name)
-				os.Exit(1)
-			}
-			NewEnv, Type := Evaluate(TempRefact.Content, Env.VariableMap, Env.FuncMap, Env.Keyfuncs)
+			// dont mess: Env.VariableMap[NewIdent.Name] = NewIdent
+			switch objectType := TempRefact.Object.(type) {
+			case lexer.Token:
 
-			var tempIdent Ident = Env.VariableMap[IdentGet.Name]
-			if !slices.Equal(Type, []string{tempIdent.Type}) {
-				fmt.Println("Cant change a val with incopadble type!")
-				os.Exit(1)
+				IdentGet, ok := Env.VariableMap[objectType.Value]
+				if !ok {
+					fmt.Printf("Coudnt find a veruble named: %s\n", objectType.Value)
+					os.Exit(1)
+				}
+				if IdentGet.IsConst {
+					fmt.Println("Cant edit a const veruble: ", objectType.Value)
+					os.Exit(1)
+				}
+				NewEnv, Type := Evaluate(TempRefact.Content, Env.VariableMap, Env.FuncMap, Env.Keyfuncs)
+
+				var tempIdent Ident = Env.VariableMap[IdentGet.Name]
+				if !slices.Equal(Type, []string{tempIdent.Type}) {
+					fmt.Println("Cant change a val with incopadble type!")
+					os.Exit(1)
+				}
+				tempIdent.Value = NewEnv
+				Env.VariableMap[IdentGet.Name] = tempIdent
+			case parser.AccessMethod:
+
+				NewEnv, _ := Evaluate(TempRefact.Content, Env.VariableMap, Env.FuncMap, Env.Keyfuncs)
+				*ToMethod(objectType, *Env) = NewEnv
+
 			}
-			tempIdent.Value = NewEnv
-			Env.VariableMap[IdentGet.Name] = tempIdent
 		case HouseType:
 			TempHouse := ParseToken.(parser.House)
 			Names := TempHouse.Names

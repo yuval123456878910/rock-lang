@@ -1,4 +1,4 @@
 struct my_pop {int main, float yu}
 var wow my_pop
-wow.main = "wow"
-print(wow.main)
+wow.main = 10
+print("WOWe",wow.main) # fix that now!
