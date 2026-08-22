@@ -895,7 +895,7 @@ func (Env *Environment) Interpeter() {
 			TempWhile := ParseToken.(parser.WhileLoop)
 			Data, Types := Evaluate(TempWhile.Condition, Env.VariableMap, Env.FuncMap, Env.Keyfuncs)
 			if len(Types) > 1 || len(Types) <= 0 || len(Types) == 1 && Types[0] != "int" {
-				fmt.Println("Coudnt load condition!")
+				parser.Panic("Syntax error", fmt.Sprint("Coudnt load condition!", TempWhile.Condition))
 			}
 			for Data.(int) == 1 {
 				// FIX: Pass Env.VariableMap directly so mutated variables persist inside the loop

@@ -251,8 +251,10 @@ func (l *Lexer) IdentifyWord() {
 		var NewToken Token
 
 		StartingPos := l.pos
+
 		for (IsOporator(l.ch) && slices.Contains(LegalOperators, string(l.Input[StartingPos:l.pos+1])) || IsOporator(l.ch) && l.pos == StartingPos) && l.pos < len(l.Input) {
 			l.Next()
+
 		}
 		NewToken.Value = string(l.Input[StartingPos:l.pos])
 		NewToken.Type = OPERATOR

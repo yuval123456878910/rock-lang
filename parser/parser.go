@@ -5,8 +5,6 @@ import (
 	"os"
 	"rocks/lexer"
 	"slices"
-
-	"github.com/sanity-io/litter"
 )
 
 var aviableTypes []string = []string{
@@ -18,7 +16,7 @@ func FindNexer(StartPos int, Tokens []lexer.Token, startFind lexer.Token, endFin
 	for idx, token := range Tokens[StartPos+1:] {
 		if Equals2Token(token, endFind) {
 
-			if SkipEnds == 0 {
+			if SkipEnds <= 0 {
 				return StartPos + 1 + idx, nil
 			}
 			SkipEnds--
@@ -432,10 +430,9 @@ func Parse(Tokens []lexer.Token) []any {
 			for start-1 > 0 && Tokens[start-1].Type != lexer.NEWLINE {
 				start -= 1
 			}
-			fmt.Println(Tokens[start:pos])
 			Expr := Expretion{Tokens: Tokens[start:pos]}
 			Result := ParseBinding(&Expr, 0)
-			litter.Dump(Result)
+			//litter.Dump(Result)
 			var NewRefactIdent RefactIdent
 			end := SearchEnd(Tokens, pos)
 

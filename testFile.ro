@@ -1,4 +1,17 @@
-struct my_pop {int main, float yu}
-var wow my_pop
-wow.main = 10
-print("WOWe",wow.main) # fix that now!
+house password = scan("Password: ")
+var correct_password string = "wow"
+
+
+func correct_func(string input string correct) (int) {
+    return input == correct
+}
+
+var correct int = correct_func(password, correct_password)
+
+while correct == 0 {
+    correct = correct_func(password, correct_password)
+    if correct == 1 {
+        print("funiched")
+    }
+}
+
