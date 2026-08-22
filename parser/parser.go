@@ -5,6 +5,8 @@ import (
 	"os"
 	"rocks/lexer"
 	"slices"
+
+	"github.com/sanity-io/litter"
 )
 
 var aviableTypes []string = []string{
@@ -542,8 +544,10 @@ func Parse(Tokens []lexer.Token) []any {
 
 			NewWhile.Condition = ParseBinding(&NewExpr, 0)
 			NewWhile.Body = Parse(Tokens[StartBody+1 : End])
+			litter.Dump(NewWhile)
 			Global_Result = append(Global_Result, NewWhile)
 			pos = End
+
 			continue
 		case "break":
 			Global_Result = append(Global_Result, Break{})

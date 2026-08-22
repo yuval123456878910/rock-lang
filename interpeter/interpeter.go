@@ -204,13 +204,15 @@ func Evaluate(CalData any, indentMap map[string]Ident, funcMap map[string]parser
 		case lexer.CHAR:
 			return byte(CalData.(lexer.Token).Value[0]), []string{"char"}
 		case lexer.IDENTIFIER:
+
 			TempIdent := CalData.(lexer.Token)
-			Ident, ok := indentMap[TempIdent.Value]
+			IdentGot, ok := indentMap[TempIdent.Value]
+
 			if !ok {
 				fmt.Println("Coudnt find a variable named:", TempIdent.Value)
 				os.Exit(1)
 			}
-			return Ident.Value, []string{indentMap[TempIdent.Value].Type}
+			return IdentGot.Value, []string{indentMap[TempIdent.Value].Type}
 		case lexer.NEWLINE:
 
 			return []any{}, []string{}
@@ -259,6 +261,9 @@ func Evaluate(CalData any, indentMap map[string]Ident, funcMap map[string]parser
 
 		for _, value := range CallFunc.Returns {
 			Types = append(Types, value.Type)
+		}
+		if len(NewEnv.Output) == 1 {
+			return NewEnv.Output[0], Types
 		}
 		return NewEnv.Output, Types
 	case ReturnType(parser.AccessMethod{}):
@@ -498,68 +503,11 @@ func Evaluate(CalData any, indentMap map[string]Ident, funcMap map[string]parser
 	case "==":
 		LeftSide, _ := Evaluate(op.Left, indentMap, funcMap, keyFuncs)
 		RightSide, _ := Evaluate(op.Right, indentMap, funcMap, keyFuncs)
-		if !slices.Contains(ApproveSideToOp, ReturnType(LeftSide)) && !slices.Contains(ApproveSideToOp, ReturnType(RightSide)) {
-			fmt.Println("Cant do None type!", ReturnType(LeftSide), ReturnType(RightSide))
-		}
-		switch left := LeftSide.(type) {
-		case int:
-			RightValue, ok := RightSide.(int)
-			if ok {
-
-				return BoolToInt(RightValue == left), []string{"int"}
-			}
-			RightValue2, ok2 := RightSide.(float64)
-			if ok2 {
-
-				return BoolToInt(RightValue2 == float64(left)), []string{"int"}
-			}
-		case float64:
-			RightValue, ok := RightSide.(int)
-			if ok {
-				return BoolToInt(float64(RightValue) == left), []string{"int"}
-			}
-			RightValue2, ok2 := RightSide.(float64)
-			if ok2 {
-				return BoolToInt(RightValue2 == left), []string{"int"}
-			}
-		case string:
-			RightValue, ok := RightSide.(string)
-			if ok {
-				return BoolToInt(RightValue == left), []string{"int"}
-			}
-		}
-	case "<":
-
+		return BoolToInt(LeftSide == RightSide), []string{"int"}
+	case "!=":
 		LeftSide, _ := Evaluate(op.Left, indentMap, funcMap, keyFuncs)
 		RightSide, _ := Evaluate(op.Right, indentMap, funcMap, keyFuncs)
-		if !slices.Contains(ApproveSideToOp, ReturnType(LeftSide)) && !slices.Contains(ApproveSideToOp, ReturnType(RightSide)) {
-			fmt.Println("Cant do None type!", ReturnType(LeftSide), ReturnType(RightSide))
-		}
-
-		switch left := LeftSide.(type) {
-		case int:
-			RightValue, ok := RightSide.(int)
-			if ok {
-
-				return BoolToInt(left < RightValue), []string{"int"}
-			}
-
-			RightValue2, ok2 := RightSide.(float64)
-			if ok2 {
-
-				return BoolToInt(float64(left) < RightValue2), []string{"int"}
-			}
-		case float64:
-
-			RightValue, ok := RightSide.(int)
-			if ok {
-				return BoolToInt(left < float64(RightValue)), []string{"int"}
-			}
-			RightValue2, ok2 := RightSide.(float64)
-			if ok2 {
-				return BoolToInt(left < RightValue2), []string{"int"}
-			}
-		}
+		return BoolToInt(LeftSide != RightSide), []string{"int"}
 	case ">":
 
 		LeftSide, _ := Evaluate(op.Left, indentMap, funcMap, keyFuncs)

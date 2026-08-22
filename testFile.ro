@@ -8,10 +8,14 @@ func correct_func(string input string correct) (int) {
 
 var correct int = correct_func(password, correct_password)
 
-while correct == 0 {
+while correct != 1 {
+    password = scan("Try again: ")
     correct = correct_func(password, correct_password)
-    if correct == 1 {
-        print("funiched")
-    }
+    # print(correct != 1)
 }
 
+print("finished")
+
+#!
+    remember to add typed structs
+!#
