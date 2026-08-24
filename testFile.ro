@@ -1,21 +1,4 @@
-house password = scan("Password: ")
-var correct_password string = "wow"
-
-
-func correct_func(string input string correct) (int) {
-    return input == correct
+struct test {
+    int number,
+    string name
 }
-
-var correct int = correct_func(password, correct_password)
-
-while correct != 1 {
-    password = scan("Try again: ")
-    correct = correct_func(password, correct_password)
-    # print(correct != 1)
-}
-
-print("finished")
-
-#!
-    remember to add typed structs
-!#

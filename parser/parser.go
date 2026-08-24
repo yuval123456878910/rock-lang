@@ -9,7 +9,7 @@ import (
 	"github.com/sanity-io/litter"
 )
 
-var aviableTypes []string = []string{
+var AviableTypes []string = []string{
 	"string", "float", "list", "dict", "char", "int", "any",
 }
 
@@ -290,7 +290,7 @@ func Parse(Tokens []lexer.Token) []any {
 
 			if index+1 > pos {
 				for idx, perameters := range Tokens[pos+3 : index+1] {
-					if perameters.Type == lexer.KEYWORD && slices.Contains(aviableTypes, perameters.Value) && perameters.Value != "any" {
+					if perameters.Type == lexer.KEYWORD && slices.Contains(AviableTypes, perameters.Value) && perameters.Value != "any" {
 						TempPar := Parimiter{Type: perameters.Value, Name: Tokens[pos+4:][idx].Value}
 						Current_Result.Perameters = append(Current_Result.Perameters, TempPar)
 					}
@@ -311,7 +311,7 @@ func Parse(Tokens []lexer.Token) []any {
 						return []any{}
 					}
 					for _, returns := range Tokens[index+2 : index2] {
-						if returns.Type == lexer.KEYWORD && slices.Contains(aviableTypes, returns.Value) {
+						if returns.Type == lexer.KEYWORD && slices.Contains(AviableTypes, returns.Value) {
 							Current_Result.Returns = append(Current_Result.Returns, TypeReturn{Type: returns.Value})
 						} else {
 							fmt.Println("You included untype as a return parameter")
@@ -353,7 +353,7 @@ func Parse(Tokens []lexer.Token) []any {
 			NewIdentefire.Name = NameToken.Value
 
 			TypeToken := Tokens[pos+2]
-			if !slices.Contains(aviableTypes, TypeToken.Value) {
+			if !slices.Contains(AviableTypes, TypeToken.Value) {
 				fmt.Printf("'%s' isn't a type in decleration of value '%s'\n", TypeToken.Value, NameToken.Value)
 				return []any{}
 			}
@@ -556,7 +556,7 @@ func Parse(Tokens []lexer.Token) []any {
 			NewStruct.Members_Ident = map[string]NewIdent{}
 			NewStruct.Members_Functions = map[string]Function{}
 			Name := Tokens[pos+1].Value
-			aviableTypes = append(aviableTypes, Name)
+			AviableTypes = append(AviableTypes, Name)
 			NewStruct.Name = Name
 
 			StartBody, err := SearchStartToken(Tokens, pos, func(item any) any { return item.(lexer.Token).Value }, "{")
@@ -591,7 +591,7 @@ func Parse(Tokens []lexer.Token) []any {
 				}
 				NewStruct.Members_Ident[NameIdent] = NewIdentForStruct
 			}
-			aviableTypes = append(aviableTypes, Name)
+			AviableTypes = append(AviableTypes, Name)
 			Global_Result = append(Global_Result, NewStruct)
 		}
 

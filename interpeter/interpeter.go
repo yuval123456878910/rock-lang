@@ -57,7 +57,7 @@ var (
 
 type StructInstance struct {
 	TypeName string
-	Fields   map[string]*any
+	Fields   map[string]*Ident
 }
 
 var ReachImported []string = []string{}
@@ -80,6 +80,33 @@ func BoolToInt(Bool bool) int {
 		return 1
 	}
 	return 0
+}
+
+func GetStartValueType(Env Environment, TypeGot string) (any, error) {
+	if !slices.Contains(parser.AviableTypes, TypeGot) {
+		return nil, fmt.Errorf("Undefined typed: %s", TypeGot)
+	}
+	var DefualValue any
+	switch TypeGot {
+	case "string":
+		DefualValue = ""
+	case "int":
+		DefualValue = 0
+	case "float":
+		DefualValue = 0.0
+	case "list":
+		DefualValue = []any{}
+	case "dict":
+		DefualValue = map[any]any{}
+	case "char":
+		DefualValue = ' '
+	}
+
+	if structDec, ok := Env.StructMap[TypeGot]; ok && DefualValue == nil {
+		DefualValue = structDec
+	}
+
+	return DefualValue, nil
 }
 
 func NewEnvironment(parseDate []any, funcMap map[string]parser.Function, variableMap map[string]Ident) Environment {
@@ -561,12 +588,14 @@ func ToMethod(Method parser.AccessMethod, Env Environment) *any {
 	for !Final {
 		switch mt := Method.Method.(type) {
 		case lexer.Token:
-			return (*IdentLocation).(Ident).Value.(StructInstance).Fields[mt.Value]
+			var Wrapper any = (*IdentLocation).(Ident).Value.(StructInstance).Fields[mt.Value]
+			return &Wrapper
 
 		case parser.AccessMethod:
 			// Note: This assignment will fail if Fields[...], which is likely a *any,
 			// is assigned directly to IdentLocation. Let's make sure it matches.
-			IdentLocation = (*IdentLocation).(Ident).Value.(StructInstance).Fields[mt.Method.(lexer.Token).Value]
+			var Wrapper any = (*IdentLocation).(Ident).Value.(StructInstance).Fields[mt.Method.(lexer.Token).Value]
+			IdentLocation = &Wrapper
 		}
 	}
 	return IdentLocation
@@ -592,10 +621,15 @@ func (Env *Environment) Interpeter() {
 			if structDef, isStruct := Env.StructMap[IdentTemp.Type]; isStruct {
 				instance := StructInstance{
 					TypeName: IdentTemp.Type,
-					Fields:   make(map[string]*any),
+					Fields:   make(map[string]*Ident),
 				}
-				for fieldName := range structDef.Members_Ident {
-					var StartVal any = 0
+				for fieldName, Value := range structDef.Members_Ident {
+					var StartVal Ident
+
+					StartVal.Value, _ = GetStartValueType(*Env, Value.Type)
+					StartVal.Type = Value.Type
+					StartVal.IsConst = false
+					StartVal.Name = Value.Name
 					instance.Fields[fieldName] = &StartVal // Set default field initializers
 				}
 				Env.VariableMap[IdentTemp.Name] = Ident{
