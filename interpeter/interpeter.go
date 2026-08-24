@@ -124,6 +124,9 @@ func NewEnvironment(parseDate []any, funcMap map[string]parser.Function, variabl
 			case []any:
 				fmt.Print(Targ...)
 				fmt.Print(" ")
+			case *Ident:
+				fmt.Print(Targ.Value)
+				fmt.Print(" ")
 			default:
 				fmt.Print(arg, " ")
 			}
@@ -681,9 +684,7 @@ func (Env *Environment) Interpeter() {
 			CallVarMap := map[string]Ident{}
 			TempValues := []any{}
 			for idx, ident := range TempCall.ParimitersInput {
-
 				callEval, _ := Evaluate(ident, Env.VariableMap, Env.FuncMap, Env.Keyfuncs)
-
 				if ok2 {
 					TempValues = append(TempValues, callEval)
 				} else {
@@ -741,7 +742,10 @@ func (Env *Environment) Interpeter() {
 			case parser.AccessMethod:
 
 				NewEnv, _ := Evaluate(TempRefact.Content, Env.VariableMap, Env.FuncMap, Env.Keyfuncs)
-				*ToMethod(objectType, *Env) = NewEnv
+				switch methodGot := (*ToMethod(objectType, *Env)).(type) {
+				case *Ident:
+					methodGot.Value = NewEnv
+				}
 
 			}
 		case HouseType:

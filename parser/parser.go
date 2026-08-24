@@ -290,7 +290,7 @@ func Parse(Tokens []lexer.Token) []any {
 
 			if index+1 > pos {
 				for idx, perameters := range Tokens[pos+3 : index+1] {
-					if perameters.Type == lexer.KEYWORD && slices.Contains(AviableTypes, perameters.Value) && perameters.Value != "any" {
+					if perameters.Type != lexer.STRING && slices.Contains(AviableTypes, perameters.Value) && perameters.Value != "any" {
 						TempPar := Parimiter{Type: perameters.Value, Name: Tokens[pos+4:][idx].Value}
 						Current_Result.Perameters = append(Current_Result.Perameters, TempPar)
 					}
@@ -337,7 +337,6 @@ func Parse(Tokens []lexer.Token) []any {
 			}
 
 			Current_Result.Body = Parse(Tokens[StartBodyIdx+1 : EndIdx])
-
 			Global_Result = append(Global_Result, Current_Result)
 			pos = EndIdx + 1
 			continue
