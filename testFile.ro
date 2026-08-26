@@ -1,12 +1,2 @@
-struct test {
-    int number,
-    string name
-}
-
-var wow test
-wow.number = 10
-wow.name = "sup"
-func printStruct(test main) () {
-    print(main.name, main.number)
-}
-printStruct(wow)
+var a list = [1,2][0:1]
+print(a)

@@ -138,6 +138,12 @@ type AccessMethod struct {
 	Method any
 }
 
+type SectionList struct {
+	List  any
+	Start any
+	End   any
+}
+
 func SearchStartToken(Array []lexer.Token, Start int, funcApply func(item any) any, Item any) (int, error) {
 	for i := Start; i < len(Array); i++ {
 		if funcApply(Array[i]) == Item {
@@ -169,7 +175,7 @@ func ReturnsSepDouble(Tokens []lexer.Token, sep lexer.Token, SkipNewline bool) [
 	Level := 0
 	if SkipNewline {
 
-		slices.DeleteFunc(Tokens, func(E lexer.Token) bool {
+		Tokens = slices.DeleteFunc(Tokens, func(E lexer.Token) bool {
 			return E.Type == lexer.NEWLINE
 		})
 
@@ -177,6 +183,7 @@ func ReturnsSepDouble(Tokens []lexer.Token, sep lexer.Token, SkipNewline bool) [
 	for pos := 0; pos < len(Tokens); pos++ {
 		if Tokens[pos] == sep && Level <= 0 {
 			TokenSeperation = append(TokenSeperation, Tokens[sepPos:pos])
+			fmt.Println(sepPos, pos)
 			sepPos = pos + 1
 			continue
 		}
@@ -189,7 +196,8 @@ func ReturnsSepDouble(Tokens []lexer.Token, sep lexer.Token, SkipNewline bool) [
 			continue
 		}
 	}
-	if len(Tokens) >= sepPos {
+	if len(Tokens) > sepPos {
+		fmt.Println(TokenSeperation)
 		TokenSeperation = append(TokenSeperation, Tokens[sepPos:])
 	}
 	return TokenSeperation
@@ -814,6 +822,9 @@ func ParseBinding(Express *Expretion, min_bind float32) any {
 		TempExpress := Expretion{Tokens: Express.Tokens[Express.Pos+1 : End]}
 		Leftside = ParseBinding(&TempExpress, 0)
 		Express.Pos = End + 1
+	} else if _, ok2 := Leftside.(List); Leftside.(lexer.Token).Value == "[" && Leftside.(lexer.Token).Type == lexer.PUNCTUATOR && (Leftside.(lexer.Token).Type == lexer.IDENTIFIER || ok2) {
+		fmt.Println("HERE")
+
 	} else if Leftside.(lexer.Token).Value == "[" && Leftside.(lexer.Token).Type == lexer.PUNCTUATOR {
 
 		End, err := FindClose(Express.Tokens, Express.Pos+1, "[", "]")
@@ -858,9 +869,8 @@ func ParseBinding(Express *Expretion, min_bind float32) any {
 		Express.Next()
 	}
 	for Express.Pos < len(Express.Tokens) {
-		CurrentToken := Express.Tokens[Express.Pos]
 
-		if !IsOporator(CurrentToken) && CurrentToken.Value != "." {
+		if !IsOporator(CurrentToken) && CurrentToken.Value != "." && CurrentToken.Type != lexer.PUNCTUATOR {
 			Express.Next()
 			continue
 		}
@@ -868,11 +878,39 @@ func ParseBinding(Express *Expretion, min_bind float32) any {
 			Express.Next()
 			var Rightside any = ParseBinding(Express, RetriveBinding(CurrentToken.Value)+1)
 			Leftside = Pipe{Arg: Leftside, PassTo: Rightside}
+
 		} else if RetriveBinding(CurrentToken.Value) >= float32(min_bind) && CurrentToken.Value == "." {
 			Express.Next()
 			var Rightside any = ParseBinding(Express, RetriveBinding(CurrentToken.Value)+1)
 			Leftside = AccessMethod{Object: Leftside, Method: Rightside} // Changed from CurrentToken.Value
+		} else if _, ok := Leftside.(List); CurrentToken.Value == "[" && ok {
+			var NewSelection SectionList
+			NewSelection.List = Leftside
+			End, err := FindNexer(Express.Pos, Express.Tokens, lexer.Token{Value: "[", Type: lexer.PUNCTUATOR}, lexer.Token{Value: "]", Type: lexer.PUNCTUATOR})
+			if err != nil {
+				Panic("Syntax error", "count find end for the list!")
+			}
+			Selection := ReturnsSepDouble(Express.Tokens[Express.Pos+1:End], lexer.Token{Value: ":", Type: lexer.PUNCTUATOR}, false)
+			fmt.Println(Selection)
+			switch len(Selection) {
+			case 1:
+
+				NewSelection.Start = ParseBinding(&Expretion{Tokens: Selection[0]}, 0)
+			case 2:
+				NewSelection.Start = ParseBinding(&Expretion{Tokens: Selection[0]}, 0)
+				NewSelection.End = ParseBinding(&Expretion{Tokens: Selection[1]}, 0)
+				fmt.Println(Selection[0])
+			default:
+				Panic("Runtime error", "Invalid amount of perameters in selecting in a list.")
+			}
+			Leftside = NewSelection
+			Express.Pos = End + 1
+			if Express.Pos+1 >= len(Express.Tokens) {
+				return Leftside
+			}
+
 		} else if RetriveBinding(CurrentToken.Value) >= float32(min_bind) {
+
 			Express.Next()
 			var Rightside any = ParseBinding(Express, RetriveBinding(CurrentToken.Value)+1)
 			Leftside = Oporation{Op: CurrentToken.Value, Right: Rightside, Left: Leftside}

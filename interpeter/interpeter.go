@@ -53,6 +53,7 @@ var (
 	PipeType         string   = ReturnType(parser.Pipe{})
 	DictType         string   = ReturnType(parser.Dictenary{})
 	AccessMethodType string   = ReturnType(parser.AccessMethod{})
+	SelectList       string   = ReturnType(parser.SectionList{})
 )
 
 type StructInstance struct {
@@ -80,6 +81,18 @@ func BoolToInt(Bool bool) int {
 		return 1
 	}
 	return 0
+}
+
+func GetDataFromSelectList(Slice []any, Start any, End any) []any {
+
+	if Start == nil {
+		Start = 0
+	}
+	if End == nil {
+		End = len(Slice)
+	}
+
+	return Slice[Start.(int):End.(int)]
 }
 
 func GetStartValueType(Env Environment, TypeGot string) (any, error) {
@@ -358,6 +371,17 @@ func Evaluate(CalData any, indentMap map[string]Ident, funcMap map[string]parser
 			NewEvalMap[LeftEval] = RightEval
 		}
 		return NewEvalMap, []string{"dict"}
+	case SelectList:
+		TempSelectList := CalData.(parser.SectionList)
+		EvalOne, _ := Evaluate(TempSelectList.Start, indentMap, funcMap, keyFuncs)
+		EvalTwo, _ := Evaluate(TempSelectList.End, indentMap, funcMap, keyFuncs)
+
+		switch value, _ := Evaluate(TempSelectList.List, indentMap, funcMap, keyFuncs); TypedData := value.(type) {
+		case []any:
+			return GetDataFromSelectList(TypedData, EvalOne, EvalTwo), []string{"list"}
+
+		}
+		parser.Panic("Runtime error", "Cound reach the selection")
 	}
 
 	op, ok := CalData.(parser.Oporation)
