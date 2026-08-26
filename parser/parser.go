@@ -3,8 +3,9 @@ package parser
 import (
 	"fmt"
 	"os"
-	"rocks/lexer"
 	"slices"
+
+	"rocks/lexer"
 
 	"github.com/sanity-io/litter"
 )
@@ -25,7 +26,6 @@ func FindNexer(StartPos int, Tokens []lexer.Token, startFind lexer.Token, endFin
 		} else if Equals2Token(token, startFind) {
 			SkipEnds++
 		}
-
 	}
 
 	return 0, fmt.Errorf("The system coudnt find end for '%s', %d", endFind.Value, SkipEnds)
@@ -124,8 +124,7 @@ type Await struct {
 	ThreadHandle any
 }
 
-type Break struct {
-}
+type Break struct{}
 
 type Struct struct {
 	Name              string
@@ -142,6 +141,7 @@ type SectionList struct {
 	List  any
 	Start any
 	End   any
+	Long  bool
 }
 
 func SearchStartToken(Array []lexer.Token, Start int, funcApply func(item any) any, Item any) (int, error) {
@@ -165,7 +165,6 @@ func SkipEnds(tokens []lexer.Token, pos *int) {
 	for tokens[*pos].Type == lexer.NEWLINE {
 		*pos++
 	}
-
 }
 
 // add option to skip newline
@@ -174,16 +173,13 @@ func ReturnsSepDouble(Tokens []lexer.Token, sep lexer.Token, SkipNewline bool) [
 	sepPos := 0
 	Level := 0
 	if SkipNewline {
-
 		Tokens = slices.DeleteFunc(Tokens, func(E lexer.Token) bool {
 			return E.Type == lexer.NEWLINE
 		})
-
 	}
 	for pos := 0; pos < len(Tokens); pos++ {
 		if Tokens[pos] == sep && Level <= 0 {
 			TokenSeperation = append(TokenSeperation, Tokens[sepPos:pos])
-			fmt.Println(sepPos, pos)
 			sepPos = pos + 1
 			continue
 		}
@@ -197,9 +193,9 @@ func ReturnsSepDouble(Tokens []lexer.Token, sep lexer.Token, SkipNewline bool) [
 		}
 	}
 	if len(Tokens) > sepPos {
-		fmt.Println(TokenSeperation)
 		TokenSeperation = append(TokenSeperation, Tokens[sepPos:])
 	}
+
 	return TokenSeperation
 }
 
@@ -234,36 +230,27 @@ func ReturnsSepOnceTokens(Tokens []lexer.Token, sep lexer.Token) []lexer.Token {
 	}
 	return TokenSeperation
 }
+
 func Parse(Tokens []lexer.Token) []any {
 	Global_Result := []any{}
 	for pos := 0; pos < len(Tokens); pos++ {
 		Token := Tokens[pos]
 		if pos > 0 && Tokens[pos-1].Type == lexer.IDENTIFIER && Token.Value == "(" && Token.Type == lexer.PUNCTUATOR {
-
 			End, err := FindClose(Tokens, pos+1, "(", ")")
 			if err != nil {
 				fmt.Println("Error: End of the call funcion wasnt found!")
 			}
 			Call := CallFunction{Name: Tokens[pos-1].Value}
-			InPrunctiotion := false
 
 			var CurrentArg []lexer.Token
-			for _, token := range Tokens[pos+1 : End] {
-				if token.Type == lexer.PUNCTUATOR && slices.Contains([]string{"{", "}", "(", ")", "{", "}"}, token.Value) {
-					InPrunctiotion = true
-					pos++
-				}
+			Comma := lexer.Token{Value: ",", Type: lexer.PUNCTUATOR}
+			for _, part := range ReturnsSepDouble(Tokens[pos+1:End], Comma, false) {
 
-				if token.Type == lexer.PUNCTUATOR && token.Value == "," && !InPrunctiotion {
-
-					TempExpress := Expretion{Tokens: CurrentArg}
-					Call.ParimitersInput = append(Call.ParimitersInput, ParseBinding(&TempExpress, 0))
-					CurrentArg = []lexer.Token{}
-					continue
-				}
-				CurrentArg = append(CurrentArg, token)
+				TempExpress := Expretion{Tokens: part}
+				Call.ParimitersInput = append(Call.ParimitersInput, ParseBinding(&TempExpress, 0))
 
 			}
+
 			if len(CurrentArg) > 0 {
 
 				TempExpress := Expretion{Tokens: CurrentArg}
@@ -305,7 +292,6 @@ func Parse(Tokens []lexer.Token) []any {
 				}
 			}
 			for i := range 1 {
-
 				if Tokens[index+1].Value == "(" && Tokens[index+1].Type == lexer.PUNCTUATOR {
 
 					StartToken2 := lexer.Token{Value: "(", Type: lexer.PUNCTUATOR}
@@ -325,7 +311,6 @@ func Parse(Tokens []lexer.Token) []any {
 							fmt.Println("You included untype as a return parameter")
 							return []any{}
 						}
-
 					}
 					i += 1
 				}
@@ -339,7 +324,6 @@ func Parse(Tokens []lexer.Token) []any {
 			StartToken2 := lexer.Token{Value: "{", Type: lexer.PUNCTUATOR}
 			EndToken2 := lexer.Token{Value: "}", Type: lexer.PUNCTUATOR}
 			EndIdx, err := FindNexer(StartBodyIdx, Tokens, StartToken2, EndToken2)
-
 			if err != nil {
 				fmt.Println("Error 105, The function didn't end")
 			}
@@ -461,7 +445,6 @@ func Parse(Tokens []lexer.Token) []any {
 			BlockStart, err := SearchStartToken(Tokens, pos, func(item any) any { return item.(lexer.Token).Value }, "{")
 			if err != nil {
 				Panic("Syntax error", "Coudnt find a start to { !")
-
 			}
 
 			EndBody, err2 := FindNexer(BlockStart, Tokens, StartToken, EndToken)
@@ -509,7 +492,6 @@ func Parse(Tokens []lexer.Token) []any {
 					var NewElse IfStm
 					BlockStart3, err := SearchStartToken(Tokens, pos, func(item any) any { return item.(lexer.Token).Value }, "{")
 					if err != nil {
-
 						Panic("Syntax error", "Coudnt find a start to { !")
 					}
 
@@ -630,7 +612,6 @@ func (e *Expretion) Next() (lexer.Token, error) {
 		return lexer.Token{}, fmt.Errorf("Limit reached")
 	}
 	return e.Tokens[e.Pos], nil
-
 }
 
 func IsExpress(token lexer.Token) bool {
@@ -706,7 +687,6 @@ var Binding map[string]float32 = map[string]float32{
 
 // error in the ParseBinding has to start at 2
 func ParseBinding(Express *Expretion, min_bind float32) any {
-
 	Leftside := any(Express.Tokens[Express.Pos])
 	CurrentToken := Express.Tokens[Express.Pos]
 	if IsOporator(CurrentToken) && (CurrentToken.Value == "-" || CurrentToken.Value == "+") {
@@ -756,10 +736,8 @@ func ParseBinding(Express *Expretion, min_bind float32) any {
 
 			if token.Type == lexer.PUNCTUATOR && slices.Contains([]string{"[", "(", "{"}, token.Value) {
 				depth++
-
 			} else if token.Type == lexer.PUNCTUATOR && slices.Contains([]string{"]", ")", "}"}, token.Value) {
 				depth--
-
 			}
 
 			if token.Type == lexer.PUNCTUATOR && token.Value == "," && depth == 0 {
@@ -790,7 +768,6 @@ func ParseBinding(Express *Expretion, min_bind float32) any {
 		}
 		Express.Next()
 		EndPos, err := FindNexer(Express.Pos, Express.Tokens, StartItem, EndItem)
-
 		if err != nil {
 			Panic("Syntax error", "Coudnt end to the dict!")
 		}
@@ -824,7 +801,6 @@ func ParseBinding(Express *Expretion, min_bind float32) any {
 		Express.Pos = End + 1
 	} else if _, ok2 := Leftside.(List); Leftside.(lexer.Token).Value == "[" && Leftside.(lexer.Token).Type == lexer.PUNCTUATOR && (Leftside.(lexer.Token).Type == lexer.IDENTIFIER || ok2) {
 		fmt.Println("HERE")
-
 	} else if Leftside.(lexer.Token).Value == "[" && Leftside.(lexer.Token).Type == lexer.PUNCTUATOR {
 
 		End, err := FindClose(Express.Tokens, Express.Pos+1, "[", "]")
@@ -868,13 +844,15 @@ func ParseBinding(Express *Expretion, min_bind float32) any {
 	} else {
 		Express.Next()
 	}
-	for Express.Pos < len(Express.Tokens) {
 
-		if !IsOporator(CurrentToken) && CurrentToken.Value != "." && CurrentToken.Type != lexer.PUNCTUATOR {
+	for Express.Pos < len(Express.Tokens) {
+		CurrentToken = Express.Tokens[Express.Pos]
+		if !IsOporator(CurrentToken) && CurrentToken.Value != "." && CurrentToken.Value != "[" {
 			Express.Next()
 			continue
 		}
 		if RetriveBinding(CurrentToken.Value) >= float32(min_bind) && CurrentToken.Value == "|>" {
+
 			Express.Next()
 			var Rightside any = ParseBinding(Express, RetriveBinding(CurrentToken.Value)+1)
 			Leftside = Pipe{Arg: Leftside, PassTo: Rightside}
@@ -891,22 +869,24 @@ func ParseBinding(Express *Expretion, min_bind float32) any {
 				Panic("Syntax error", "count find end for the list!")
 			}
 			Selection := ReturnsSepDouble(Express.Tokens[Express.Pos+1:End], lexer.Token{Value: ":", Type: lexer.PUNCTUATOR}, false)
-			fmt.Println(Selection)
 			switch len(Selection) {
 			case 1:
 
 				NewSelection.Start = ParseBinding(&Expretion{Tokens: Selection[0]}, 0)
+				NewSelection.Long = false
 			case 2:
 				NewSelection.Start = ParseBinding(&Expretion{Tokens: Selection[0]}, 0)
 				NewSelection.End = ParseBinding(&Expretion{Tokens: Selection[1]}, 0)
-				fmt.Println(Selection[0])
+				NewSelection.Long = true
 			default:
 				Panic("Runtime error", "Invalid amount of perameters in selecting in a list.")
 			}
 			Leftside = NewSelection
 			Express.Pos = End + 1
 			if Express.Pos+1 >= len(Express.Tokens) {
+
 				return Leftside
+
 			}
 
 		} else if RetriveBinding(CurrentToken.Value) >= float32(min_bind) {

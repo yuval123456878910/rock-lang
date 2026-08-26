@@ -2,6 +2,7 @@ package main
 
 import (
 	"os"
+
 	"rocks/interpeter"
 	lexer "rocks/lexer"
 	parserIm "rocks/parser"
@@ -16,13 +17,12 @@ func main() {
 	L1.CorrectBackSlash()
 	L1.LexerAll()
 	L1.AddEOF()
-	// fmt.Println(L1.Tokens)
+	//fmt.Println(L1.Tokens)
 	parser := parserIm.Parser{}
 	parser.Input = L1.Tokens
 	parser.Parsing()
 
-	// litter.Dump(parser.Output...)
+	//litter.Dump(parser.Output...)
 	NewEnv := interpeter.NewEnvironment(parser.Output, map[string]parserIm.Function{}, map[string]interpeter.Ident{})
 	NewEnv.Interpeter()
-
 }

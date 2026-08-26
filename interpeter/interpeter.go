@@ -14,11 +14,12 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"rocks/lexer"
-	"rocks/parser"
 	"slices"
 	"strconv"
 	"strings"
+
+	"rocks/lexer"
+	"rocks/parser"
 )
 
 func IsLink(text string) bool {
@@ -83,7 +84,10 @@ func BoolToInt(Bool bool) int {
 	return 0
 }
 
-func GetDataFromSelectList(Slice []any, Start any, End any) []any {
+func GetDataFromSelectList(Slice []any, Start any, End any, Long bool) []any {
+	if !Long {
+		return []any{Slice[Start.(int)]}
+	}
 
 	if Start == nil {
 		Start = 0
@@ -143,7 +147,6 @@ func NewEnvironment(parseDate []any, funcMap map[string]parser.Function, variabl
 			default:
 				fmt.Print(arg, " ")
 			}
-
 		}
 		fmt.Println()
 		return args, []string{"any"}
@@ -172,7 +175,6 @@ func NewEnvironment(parseDate []any, funcMap map[string]parser.Function, variabl
 		fmt.Print(Text)
 		Scanner := bufio.NewScanner(os.Stdin)
 		if Scanner.Scan() {
-
 		}
 		return Scanner.Text(), []string{"string"}
 	}
@@ -214,7 +216,6 @@ func (s *SaveDataEnv) Save(env Environment) {
 func LoadNewData[T any](keys []string, data map[string]T) map[string]T {
 	NewVars := map[string]T{}
 	for _, key := range keys {
-
 		NewVars[key] = data[key]
 	}
 	return NewVars
@@ -357,8 +358,6 @@ func Evaluate(CalData any, indentMap map[string]Ident, funcMap map[string]parser
 		EvalPass, types := Evaluate(TempPass, indentMap, funcMap, keyFuncs)
 
 		return EvalPass, types
-	case AccessMethodType:
-		fmt.Println("WOW;lkj;kj;kj;lkj;lkj;klj;lkj;lkj")
 	case DictType:
 		TempDict := CalData.(parser.Dictenary)
 		Dict := TempDict.Elements
@@ -372,14 +371,25 @@ func Evaluate(CalData any, indentMap map[string]Ident, funcMap map[string]parser
 		}
 		return NewEvalMap, []string{"dict"}
 	case SelectList:
+		var EvalOne any
+		var EvalTwo any
 		TempSelectList := CalData.(parser.SectionList)
-		EvalOne, _ := Evaluate(TempSelectList.Start, indentMap, funcMap, keyFuncs)
-		EvalTwo, _ := Evaluate(TempSelectList.End, indentMap, funcMap, keyFuncs)
 
-		switch value, _ := Evaluate(TempSelectList.List, indentMap, funcMap, keyFuncs); TypedData := value.(type) {
+		if TempSelectList.Start != nil {
+			EvalOne, _ = Evaluate(TempSelectList.Start, indentMap, funcMap, keyFuncs)
+		}
+		if TempSelectList.End != nil {
+			EvalTwo, _ = Evaluate(TempSelectList.End, indentMap, funcMap, keyFuncs)
+		}
+		switch value, _ := Evaluate(TempSelectList.List, indentMap, funcMap, keyFuncs); value.(type) {
 		case []any:
-			return GetDataFromSelectList(TypedData, EvalOne, EvalTwo), []string{"list"}
 
+			Section := GetDataFromSelectList(value.([]any)[0].([]any), EvalOne, EvalTwo, TempSelectList.Long)
+
+			if len(Section) == 1 {
+				return Section[0], []string{"any"}
+			}
+			return Section, []string{"list"}
 		}
 		parser.Panic("Runtime error", "Cound reach the selection")
 	}
@@ -414,7 +424,7 @@ func Evaluate(CalData any, indentMap map[string]Ident, funcMap map[string]parser
 		case float64:
 			right, ok := RightSide.(int)
 			if ok {
-				return (left) + float64(right), []string{"float"}
+				return left + float64(right), []string{"float"}
 			}
 			right2, ok2 := RightSide.(float64)
 			if ok2 {
@@ -465,7 +475,7 @@ func Evaluate(CalData any, indentMap map[string]Ident, funcMap map[string]parser
 		case float64:
 			right, ok := RightSide.(int)
 			if ok {
-				return (left) - float64(right), []string{"float"}
+				return left - float64(right), []string{"float"}
 			}
 			right2, ok2 := RightSide.(float64)
 			if ok2 {
@@ -544,7 +554,7 @@ func Evaluate(CalData any, indentMap map[string]Ident, funcMap map[string]parser
 		case float64:
 			right, ok := RightSide.(int)
 			if ok {
-				return (left) / float64(right), []string{"float"}
+				return left / float64(right), []string{"float"}
 			}
 			right2, ok2 := RightSide.(float64)
 			if ok2 {
@@ -574,13 +584,11 @@ func Evaluate(CalData any, indentMap map[string]Ident, funcMap map[string]parser
 		case int:
 			RightValue, ok := RightSide.(int)
 			if ok {
-
 				return BoolToInt(left > RightValue), []string{"int"}
 			}
 
 			RightValue2, ok2 := RightSide.(float64)
 			if ok2 {
-
 				return BoolToInt(float64(left) > RightValue2), []string{"int"}
 			}
 		case float64:
@@ -788,9 +796,7 @@ func (Env *Environment) Interpeter() {
 				case []any:
 					if slices.Compare(typed, []string{"list"}) != 0 {
 						flattenContexts = append(flattenContexts, contextType...)
-
 					} else {
-
 						flattenContexts = append(flattenContexts, contextType)
 					}
 
@@ -930,5 +936,4 @@ func (Env *Environment) Interpeter() {
 			Env.Breaked = true
 		}
 	}
-
 }
