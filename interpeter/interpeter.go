@@ -374,7 +374,6 @@ func Evaluate(CalData any, indentMap map[string]Ident, funcMap map[string]parser
 		var EvalOne any
 		var EvalTwo any
 		TempSelectList := CalData.(parser.SectionList)
-
 		if TempSelectList.Start != nil {
 			EvalOne, _ = Evaluate(TempSelectList.Start, indentMap, funcMap, keyFuncs)
 		}
@@ -390,6 +389,23 @@ func Evaluate(CalData any, indentMap map[string]Ident, funcMap map[string]parser
 				return Section[0], []string{"any"}
 			}
 			return Section, []string{"list"}
+		case map[any]any:
+			if TempSelectList.Long == true {
+				parser.Panic("Syntax error", "Cant have a select dict with two elements")
+			}
+			if TempSelectList.Start == nil {
+				parser.Panic("Syntax error", "Dict select start is empty")
+			}
+			if TempSelectList.End != nil {
+				parser.Panic("Syntax error", "Dict select end isn't empty")
+			}
+			EvalOne, Type := Evaluate(TempSelectList.Start, indentMap, funcMap, keyFuncs)
+			if Type[0] != "string" {
+				parser.Panic("Interpeter error", "Cant have a selection of type not string!")
+			}
+
+			return value.(map[any]any)[EvalOne], []string{"any"}
+
 		}
 		parser.Panic("Runtime error", "Cound reach the selection")
 	}

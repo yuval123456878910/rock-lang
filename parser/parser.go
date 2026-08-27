@@ -689,6 +689,7 @@ var Binding map[string]float32 = map[string]float32{
 func ParseBinding(Express *Expretion, min_bind float32) any {
 	Leftside := any(Express.Tokens[Express.Pos])
 	CurrentToken := Express.Tokens[Express.Pos]
+
 	if IsOporator(CurrentToken) && (CurrentToken.Value == "-" || CurrentToken.Value == "+") {
 		op := CurrentToken.Value
 		Express.Next() // Consume the operator ('-')
@@ -847,6 +848,10 @@ func ParseBinding(Express *Expretion, min_bind float32) any {
 
 	for Express.Pos < len(Express.Tokens) {
 		CurrentToken = Express.Tokens[Express.Pos]
+		_, IsList := Leftside.(List)
+		_, IsDict := Leftside.(Dictenary)
+		Token, IsToken := Leftside.(lexer.Token)
+		IsIdent := IsToken && Token.Type == lexer.IDENTIFIER
 		if !IsOporator(CurrentToken) && CurrentToken.Value != "." && CurrentToken.Value != "[" {
 			Express.Next()
 			continue
@@ -861,7 +866,7 @@ func ParseBinding(Express *Expretion, min_bind float32) any {
 			Express.Next()
 			var Rightside any = ParseBinding(Express, RetriveBinding(CurrentToken.Value)+1)
 			Leftside = AccessMethod{Object: Leftside, Method: Rightside} // Changed from CurrentToken.Value
-		} else if _, ok := Leftside.(List); CurrentToken.Value == "[" && ok {
+		} else if CurrentToken.Value == "[" && (IsList || IsDict || IsIdent) {
 			var NewSelection SectionList
 			NewSelection.List = Leftside
 			End, err := FindNexer(Express.Pos, Express.Tokens, lexer.Token{Value: "[", Type: lexer.PUNCTUATOR}, lexer.Token{Value: "]", Type: lexer.PUNCTUATOR})
