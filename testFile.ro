@@ -1,3 +1,2 @@
-var a dict = {"wow": 1}
-a["wow"] = 2
-print(a["wow"])
+var a string = "FOWD"
+print(a[0])

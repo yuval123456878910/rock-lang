@@ -84,19 +84,36 @@ func BoolToInt(Bool bool) int {
 	return 0
 }
 
-func GetDataFromSelectList(Slice []any, Start any, End any, Long bool) []any {
-	if !Long {
-		return []any{Slice[Start.(int)]}
-	}
+func GetDataFromSelectList(Slice any, Start any, End any, Long bool) any {
+	switch Typed := Slice.(type) {
 
-	if Start == nil {
-		Start = 0
-	}
-	if End == nil {
-		End = len(Slice)
-	}
+	case []any:
+		if !Long {
+			return []any{Typed[Start.(int)]}
+		}
 
-	return Slice[Start.(int):End.(int)]
+		if Start == nil {
+			Start = 0
+		}
+		if End == nil {
+			End = len(Typed)
+		}
+
+		return Typed[Start.(int):End.(int)]
+	case string:
+		if !Long {
+			return string(Typed[Start.(int)])
+		}
+		if Start == nil {
+			Start = 0
+		}
+		if End == nil {
+			End = len(Typed)
+		}
+
+		return string(Typed[Start.(int):End.(int)])
+	}
+	return nil
 }
 
 func GetStartValueType(Env Environment, TypeGot string) (any, error) {
@@ -233,7 +250,7 @@ func GetToSelection(Env *Environment, Select *parser.SectionList) *any {
 		return GetToSelection(Env, CurrentPointer.(*parser.SectionList).List.(*parser.SectionList))
 	}
 	var V any
-	switch Typed := (CurrentPointer.(*parser.SectionList).List).(type) {
+	switch Typed := CurrentPointer.(*parser.SectionList).List.(type) {
 	case lexer.Token:
 		V = Env.VariableMap[Typed.Value].Value
 
@@ -416,13 +433,17 @@ func Evaluate(CalData any, indentMap map[string]Ident, funcMap map[string]parser
 		case []any:
 			Section := GetDataFromSelectList(value.([]any)[0].([]any), EvalOne, EvalTwo, TempSelectList.Long)
 
-			if len(Section) == 1 {
+			if len(Section.([]any)) == 1 {
 				if ReturnSelectListPointer {
-					return &(Section[0]), []string{"any"}
+					return &Section.([]any)[0], []string{"any"}
 				}
-				return Section[0], []string{"any"}
+				return Section.([]any)[0], []string{"any"}
 			}
-			return Section, []string{"list"}
+			return Section.([]any), []string{"list"}
+		case string:
+
+			Section := GetDataFromSelectList(value.(string), EvalOne, EvalTwo, TempSelectList.Long)
+			return Section.(string), []string{"string"}
 		case map[any]any:
 			if TempSelectList.Long == true {
 				parser.Panic("Syntax error", "Cant have a select dict with two elements")
