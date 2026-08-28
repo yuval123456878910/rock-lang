@@ -850,6 +850,7 @@ func ParseBinding(Express *Expretion, min_bind float32) any {
 		CurrentToken = Express.Tokens[Express.Pos]
 		_, IsList := Leftside.(List)
 		_, IsDict := Leftside.(Dictenary)
+		_, IsSelectList := Leftside.(SectionList)
 		Token, IsToken := Leftside.(lexer.Token)
 		IsIdent := IsToken && Token.Type == lexer.IDENTIFIER
 		if !IsOporator(CurrentToken) && CurrentToken.Value != "." && CurrentToken.Value != "[" {
@@ -866,7 +867,7 @@ func ParseBinding(Express *Expretion, min_bind float32) any {
 			Express.Next()
 			var Rightside any = ParseBinding(Express, RetriveBinding(CurrentToken.Value)+1)
 			Leftside = AccessMethod{Object: Leftside, Method: Rightside} // Changed from CurrentToken.Value
-		} else if CurrentToken.Value == "[" && (IsList || IsDict || IsIdent) {
+		} else if CurrentToken.Value == "[" && (IsList || IsDict || IsIdent || IsSelectList) {
 			var NewSelection SectionList
 			NewSelection.List = Leftside
 			End, err := FindNexer(Express.Pos, Express.Tokens, lexer.Token{Value: "[", Type: lexer.PUNCTUATOR}, lexer.Token{Value: "]", Type: lexer.PUNCTUATOR})

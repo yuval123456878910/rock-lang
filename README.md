@@ -72,9 +72,10 @@ use `break` to stop
 # List
 To assine a list you can only use the var keyword, not house because house will assine all the elements to agiven args in house.
 ```
-house list1 = [1,2,3] # bad-error
-var list1 list = [1,2,3] # good
+house list1 = [1,2,3] 
+house indexZero = list1[0]
 ```
+
 # Build in list functions
 ```
 house NewList = append(<list>, <data>)
@@ -83,7 +84,6 @@ returns the added data to the list \
 ```
 house NewItem = look(<list>, <pos>)
 ```
-Currentry you cant select the item in the list using [pos]. Insted you do like what i done.
 
 # Thread/Await
 Decleration of a thread:
@@ -119,7 +119,7 @@ var <name> dict = {<item>:<value>}
 ```
 to get an item you do this:
 ```
-at(<dict_var>, <key>)
+<var dict>[<name>]
 ```
 
 # Struct

@@ -226,7 +226,39 @@ func (s *SaveDataEnv) LoadTo(env *Environment) {
 	env.FuncMap = LoadNewData(s.FuncMapNames, env.FuncMap)
 }
 
-func Evaluate(CalData any, indentMap map[string]Ident, funcMap map[string]parser.Function, keyFuncs map[string]Keyfunc) (any, []string) {
+func GetToSelection(Env *Environment, Select *parser.SectionList) *any {
+	var CurrentPointer any = Select
+	_, ok := CurrentPointer.(*parser.SectionList).List.(parser.SectionList)
+	for ok {
+		return GetToSelection(Env, CurrentPointer.(*parser.SectionList).List.(*parser.SectionList))
+	}
+	var V any
+	switch Typed := (CurrentPointer.(*parser.SectionList).List).(type) {
+	case lexer.Token:
+		V = Env.VariableMap[Typed.Value].Value
+
+	default:
+		V, _ = Evaluate(CurrentPointer.(*parser.SectionList).List, Env.VariableMap, Env.FuncMap, Env.Keyfuncs, false)
+	}
+
+	var S any
+	var E any
+
+	switch TypeV := V.(type) {
+	case []any:
+		S, _ = Evaluate(CurrentPointer.(*parser.SectionList).Start, Env.VariableMap, Env.FuncMap, Env.Keyfuncs, false)
+		E, _ = Evaluate(CurrentPointer.(*parser.SectionList).End, Env.VariableMap, Env.FuncMap, Env.Keyfuncs, false)
+		var Wrapper any = TypeV[S.(int):E.(int)]
+		return &Wrapper
+	case map[any]any:
+		S, _ = Evaluate(CurrentPointer.(*parser.SectionList).Start, Env.VariableMap, Env.FuncMap, Env.Keyfuncs, false)
+		var Wrapper any = TypeV[S]
+		return &Wrapper
+	}
+	return &V
+}
+
+func Evaluate(CalData any, indentMap map[string]Ident, funcMap map[string]parser.Function, keyFuncs map[string]Keyfunc, ReturnSelectListPointer bool) (any, []string) {
 	var Value any
 	CalType := ReturnType(CalData)
 
@@ -267,7 +299,7 @@ func Evaluate(CalData any, indentMap map[string]Ident, funcMap map[string]parser
 		NewList := []any{}
 		NewTypes := []string{}
 		for _, item := range TempList.Items {
-			NewItems, NewType := Evaluate(item, indentMap, funcMap, keyFuncs)
+			NewItems, NewType := Evaluate(item, indentMap, funcMap, keyFuncs, false)
 			NewList = append(NewList, NewItems)
 			NewTypes = append(NewTypes, NewType...)
 		}
@@ -285,7 +317,7 @@ func Evaluate(CalData any, indentMap map[string]Ident, funcMap map[string]parser
 		CallVarMap := map[string]Ident{}
 		TempValues := []any{}
 		for idx, ident := range TempCall.ParimitersInput {
-			callEval, _ := Evaluate(ident, indentMap, funcMap, keyFuncs)
+			callEval, _ := Evaluate(ident, indentMap, funcMap, keyFuncs, false)
 			if ok2 {
 				TempValues = append(TempValues, callEval)
 			} else {
@@ -316,7 +348,7 @@ func Evaluate(CalData any, indentMap map[string]Ident, funcMap map[string]parser
 		return *ToMethod(CalData.(parser.AccessMethod), NewEnv), []string{"any"}
 	case UnaryOpType:
 		TempUnaryOp := CalData.(parser.UnaryOp)
-		Value, _ := Evaluate(TempUnaryOp.Value, indentMap, funcMap, keyFuncs)
+		Value, _ := Evaluate(TempUnaryOp.Value, indentMap, funcMap, keyFuncs, false)
 		switch ValType := Value.(type) {
 		case int:
 			return -ValType, []string{"int"}
@@ -333,7 +365,7 @@ func Evaluate(CalData any, indentMap map[string]Ident, funcMap map[string]parser
 		Func := TempThread.Content
 		ch := make(chan ThreadChannel)
 		go func() {
-			vals, types := Evaluate(Func, indentMap, funcMap, keyFuncs)
+			vals, types := Evaluate(Func, indentMap, funcMap, keyFuncs, false)
 			ch <- ThreadChannel{Values: vals, Types: types}
 			close(ch)
 		}()
@@ -355,7 +387,7 @@ func Evaluate(CalData any, indentMap map[string]Ident, funcMap map[string]parser
 		TempPass := TempPipe.PassTo.(parser.CallFunction)
 
 		TempPass.ParimitersInput = append([]any{TempPipe.Arg}, TempPass.ParimitersInput...)
-		EvalPass, types := Evaluate(TempPass, indentMap, funcMap, keyFuncs)
+		EvalPass, types := Evaluate(TempPass, indentMap, funcMap, keyFuncs, false)
 
 		return EvalPass, types
 	case DictType:
@@ -365,8 +397,8 @@ func Evaluate(CalData any, indentMap map[string]Ident, funcMap map[string]parser
 		NewEvalMap := map[any]any{}
 		for key := range Keys {
 			NewRightEval := Dict[key]
-			RightEval, _ := Evaluate(NewRightEval, indentMap, funcMap, keyFuncs)
-			LeftEval, _ := Evaluate(key, indentMap, funcMap, keyFuncs)
+			RightEval, _ := Evaluate(NewRightEval, indentMap, funcMap, keyFuncs, false)
+			LeftEval, _ := Evaluate(key, indentMap, funcMap, keyFuncs, false)
 			NewEvalMap[LeftEval] = RightEval
 		}
 		return NewEvalMap, []string{"dict"}
@@ -375,17 +407,19 @@ func Evaluate(CalData any, indentMap map[string]Ident, funcMap map[string]parser
 		var EvalTwo any
 		TempSelectList := CalData.(parser.SectionList)
 		if TempSelectList.Start != nil {
-			EvalOne, _ = Evaluate(TempSelectList.Start, indentMap, funcMap, keyFuncs)
+			EvalOne, _ = Evaluate(TempSelectList.Start, indentMap, funcMap, keyFuncs, false)
 		}
 		if TempSelectList.End != nil {
-			EvalTwo, _ = Evaluate(TempSelectList.End, indentMap, funcMap, keyFuncs)
+			EvalTwo, _ = Evaluate(TempSelectList.End, indentMap, funcMap, keyFuncs, false)
 		}
-		switch value, _ := Evaluate(TempSelectList.List, indentMap, funcMap, keyFuncs); value.(type) {
+		switch value, _ := Evaluate(TempSelectList.List, indentMap, funcMap, keyFuncs, false); value.(type) {
 		case []any:
-
 			Section := GetDataFromSelectList(value.([]any)[0].([]any), EvalOne, EvalTwo, TempSelectList.Long)
 
 			if len(Section) == 1 {
+				if ReturnSelectListPointer {
+					return &(Section[0]), []string{"any"}
+				}
 				return Section[0], []string{"any"}
 			}
 			return Section, []string{"list"}
@@ -399,12 +433,16 @@ func Evaluate(CalData any, indentMap map[string]Ident, funcMap map[string]parser
 			if TempSelectList.End != nil {
 				parser.Panic("Syntax error", "Dict select end isn't empty")
 			}
-			EvalOne, Type := Evaluate(TempSelectList.Start, indentMap, funcMap, keyFuncs)
+			EvalOne, Type := Evaluate(TempSelectList.Start, indentMap, funcMap, keyFuncs, false)
 			if Type[0] != "string" {
 				parser.Panic("Interpeter error", "Cant have a selection of type not string!")
 			}
 
-			return value.(map[any]any)[EvalOne], []string{"any"}
+			var wrapper any = value.(map[any]any)[EvalOne]
+			if ReturnSelectListPointer {
+				return &wrapper, []string{"any"}
+			}
+			return wrapper, []string{"any"}
 
 		}
 		parser.Panic("Runtime error", "Cound reach the selection")
@@ -417,8 +455,8 @@ func Evaluate(CalData any, indentMap map[string]Ident, funcMap map[string]parser
 	}
 	switch op.Op {
 	case "+":
-		LeftSide, _ := Evaluate(op.Left, indentMap, funcMap, keyFuncs)
-		RightSide, _ := Evaluate(op.Right, indentMap, funcMap, keyFuncs)
+		LeftSide, _ := Evaluate(op.Left, indentMap, funcMap, keyFuncs, false)
+		RightSide, _ := Evaluate(op.Right, indentMap, funcMap, keyFuncs, false)
 		if !slices.Contains(ApproveSideToOp, ReturnType(LeftSide)) && !slices.Contains(ApproveSideToOp, ReturnType(RightSide)) {
 			fmt.Println("Cant do None type!", ReturnType(LeftSide), ReturnType(RightSide))
 		}
@@ -467,8 +505,8 @@ func Evaluate(CalData any, indentMap map[string]Ident, funcMap map[string]parser
 			fmt.Println("Can't add to a byte a incompatible type!")
 		}
 	case "-":
-		LeftSide, _ := Evaluate(op.Left, indentMap, funcMap, keyFuncs)
-		RightSide, _ := Evaluate(op.Right, indentMap, funcMap, keyFuncs)
+		LeftSide, _ := Evaluate(op.Left, indentMap, funcMap, keyFuncs, false)
+		RightSide, _ := Evaluate(op.Right, indentMap, funcMap, keyFuncs, false)
 		if !slices.Contains(ApproveSideToOp, ReturnType(LeftSide)) && !slices.Contains(ApproveSideToOp, ReturnType(RightSide)) {
 			fmt.Println("Cant do None type!", ReturnType(LeftSide), ReturnType(RightSide))
 		}
@@ -514,8 +552,8 @@ func Evaluate(CalData any, indentMap map[string]Ident, funcMap map[string]parser
 			os.Exit(1)
 		}
 	case "*":
-		LeftSide, _ := Evaluate(op.Left, indentMap, funcMap, keyFuncs)
-		RightSide, _ := Evaluate(op.Right, indentMap, funcMap, keyFuncs)
+		LeftSide, _ := Evaluate(op.Left, indentMap, funcMap, keyFuncs, false)
+		RightSide, _ := Evaluate(op.Right, indentMap, funcMap, keyFuncs, false)
 		switch left := LeftSide.(type) {
 		case int:
 			integerRight, ok := RightSide.(int)
@@ -552,8 +590,8 @@ func Evaluate(CalData any, indentMap map[string]Ident, funcMap map[string]parser
 			os.Exit(1)
 		}
 	case "/":
-		LeftSide, _ := Evaluate(op.Left, indentMap, funcMap, keyFuncs)
-		RightSide, _ := Evaluate(op.Right, indentMap, funcMap, keyFuncs)
+		LeftSide, _ := Evaluate(op.Left, indentMap, funcMap, keyFuncs, false)
+		RightSide, _ := Evaluate(op.Right, indentMap, funcMap, keyFuncs, false)
 		if !slices.Contains(ApproveSideToOp, ReturnType(LeftSide)) && !slices.Contains(ApproveSideToOp, ReturnType(RightSide)) {
 			fmt.Println("Cant do None type!", ReturnType(LeftSide), ReturnType(RightSide))
 		}
@@ -581,17 +619,17 @@ func Evaluate(CalData any, indentMap map[string]Ident, funcMap map[string]parser
 
 		}
 	case "==":
-		LeftSide, _ := Evaluate(op.Left, indentMap, funcMap, keyFuncs)
-		RightSide, _ := Evaluate(op.Right, indentMap, funcMap, keyFuncs)
+		LeftSide, _ := Evaluate(op.Left, indentMap, funcMap, keyFuncs, false)
+		RightSide, _ := Evaluate(op.Right, indentMap, funcMap, keyFuncs, false)
 		return BoolToInt(LeftSide == RightSide), []string{"int"}
 	case "!=":
-		LeftSide, _ := Evaluate(op.Left, indentMap, funcMap, keyFuncs)
-		RightSide, _ := Evaluate(op.Right, indentMap, funcMap, keyFuncs)
+		LeftSide, _ := Evaluate(op.Left, indentMap, funcMap, keyFuncs, false)
+		RightSide, _ := Evaluate(op.Right, indentMap, funcMap, keyFuncs, false)
 		return BoolToInt(LeftSide != RightSide), []string{"int"}
 	case ">":
 
-		LeftSide, _ := Evaluate(op.Left, indentMap, funcMap, keyFuncs)
-		RightSide, _ := Evaluate(op.Right, indentMap, funcMap, keyFuncs)
+		LeftSide, _ := Evaluate(op.Left, indentMap, funcMap, keyFuncs, false)
+		RightSide, _ := Evaluate(op.Right, indentMap, funcMap, keyFuncs, false)
 		if !slices.Contains(ApproveSideToOp, ReturnType(LeftSide)) && !slices.Contains(ApproveSideToOp, ReturnType(RightSide)) {
 			fmt.Println("Cant do None type!", ReturnType(LeftSide), ReturnType(RightSide))
 		}
@@ -688,14 +726,14 @@ func (Env *Environment) Interpeter() {
 				}
 				continue
 			}
-			Result, _ := Evaluate(IdentTemp.Content, Env.VariableMap, Env.FuncMap, Env.Keyfuncs)
+			Result, _ := Evaluate(IdentTemp.Content, Env.VariableMap, Env.FuncMap, Env.Keyfuncs, false)
 
 			NewIdent := Ident{Value: Result, Name: IdentTemp.Name, Type: IdentTemp.Type, IsConst: IdentTemp.IsConst}
 			Env.VariableMap[NewIdent.Name] = NewIdent
 
 		case OporationType:
 			OporationTemp := ParseToken.(parser.Oporation)
-			t, _ := Evaluate(OporationTemp, Env.VariableMap, Env.FuncMap, Env.Keyfuncs)
+			t, _ := Evaluate(OporationTemp, Env.VariableMap, Env.FuncMap, Env.Keyfuncs, false)
 			Env.Output = append(Env.Output, t)
 
 		case ReturnType(lexer.Token{}):
@@ -712,7 +750,7 @@ func (Env *Environment) Interpeter() {
 				Env.Output = append(Env.Output, val.Value)
 
 			} else {
-				t, _ := Evaluate(ParseToken, Env.VariableMap, Env.FuncMap, Env.Keyfuncs)
+				t, _ := Evaluate(ParseToken, Env.VariableMap, Env.FuncMap, Env.Keyfuncs, false)
 				Env.Output = append(Env.Output, t)
 			}
 		case ReturnType(parser.Struct{}):
@@ -732,7 +770,7 @@ func (Env *Environment) Interpeter() {
 			CallVarMap := map[string]Ident{}
 			TempValues := []any{}
 			for idx, ident := range TempCall.ParimitersInput {
-				callEval, _ := Evaluate(ident, Env.VariableMap, Env.FuncMap, Env.Keyfuncs)
+				callEval, _ := Evaluate(ident, Env.VariableMap, Env.FuncMap, Env.Keyfuncs, false)
 				if ok2 {
 					TempValues = append(TempValues, callEval)
 				} else {
@@ -757,7 +795,7 @@ func (Env *Environment) Interpeter() {
 			TempReturn := ParseToken.(parser.Return)
 			Env.Output = []any{}
 			for _, expr := range TempReturn.Exprs {
-				ReturnEval, _ := Evaluate(expr, Env.VariableMap, Env.FuncMap, Env.Keyfuncs)
+				ReturnEval, _ := Evaluate(expr, Env.VariableMap, Env.FuncMap, Env.Keyfuncs, false)
 				Env.Output = append(Env.Output, ReturnEval)
 			}
 			Env.Returned = true
@@ -778,7 +816,7 @@ func (Env *Environment) Interpeter() {
 					fmt.Println("Cant edit a const veruble: ", objectType.Value)
 					os.Exit(1)
 				}
-				NewEnv, Type := Evaluate(TempRefact.Content, Env.VariableMap, Env.FuncMap, Env.Keyfuncs)
+				NewEnv, Type := Evaluate(TempRefact.Content, Env.VariableMap, Env.FuncMap, Env.Keyfuncs, false)
 
 				var tempIdent Ident = Env.VariableMap[IdentGet.Name]
 				if !slices.Equal(Type, []string{tempIdent.Type}) {
@@ -789,10 +827,54 @@ func (Env *Environment) Interpeter() {
 				Env.VariableMap[IdentGet.Name] = tempIdent
 			case parser.AccessMethod:
 
-				NewEnv, _ := Evaluate(TempRefact.Content, Env.VariableMap, Env.FuncMap, Env.Keyfuncs)
+				NewEnv, _ := Evaluate(TempRefact.Content, Env.VariableMap, Env.FuncMap, Env.Keyfuncs, false)
 				switch methodGot := (*ToMethod(objectType, *Env)).(type) {
 				case *Ident:
 					methodGot.Value = NewEnv
+				}
+			case parser.SectionList:
+				newVal, _ := Evaluate(TempRefact.Content, Env.VariableMap, Env.FuncMap, Env.Keyfuncs, false)
+
+				// 2. Resolve the targeted list or dict expression
+				targetVal, _ := Evaluate(objectType.List, Env.VariableMap, Env.FuncMap, Env.Keyfuncs, false)
+
+				// 3. Resolve index / key values
+				var startIdx any
+				if objectType.Start != nil {
+					startIdx, _ = Evaluate(objectType.Start, Env.VariableMap, Env.FuncMap, Env.Keyfuncs, false)
+				}
+
+				// 4. Update the target collection container
+				switch container := targetVal.(type) {
+				case map[any]any:
+					// Update key-value pair in dictionary
+					container[startIdx] = newVal
+
+				case []any:
+					// Unpack double-wrapped list structure if nested
+					actualSlice := container
+					if len(container) == 1 {
+						if innerSlice, ok := container[0].([]any); ok {
+							actualSlice = innerSlice
+						}
+					}
+
+					idx, ok := startIdx.(int)
+					if !ok {
+						// Handle float to int conversions if numbers evaluate as float64
+						if fIdx, isFloat := startIdx.(float64); isFloat {
+							idx = int(fIdx)
+						} else {
+							parser.Panic("Runtime Error", "List index must be an integer")
+						}
+					}
+
+					if idx < 0 || idx >= len(actualSlice) {
+						parser.Panic("Runtime Error", "Index out of range")
+					}
+
+					// Mutate element in place
+					actualSlice[idx] = newVal
 				}
 
 			}
@@ -804,7 +886,7 @@ func (Env *Environment) Interpeter() {
 			flattenContexts := []any{}
 			for _, content := range TempHouse.Contents {
 
-				context, typed := Evaluate(content, Env.VariableMap, Env.FuncMap, Env.Keyfuncs)
+				context, typed := Evaluate(content, Env.VariableMap, Env.FuncMap, Env.Keyfuncs, false)
 
 				Contents = append(Contents, context)
 
@@ -832,7 +914,7 @@ func (Env *Environment) Interpeter() {
 		case IfType:
 			var TempIfPointer parser.IfStm = ParseToken.(parser.IfStm)
 			for true {
-				Values, types := Evaluate(TempIfPointer.Condition, Env.VariableMap, Env.FuncMap, Env.Keyfuncs)
+				Values, types := Evaluate(TempIfPointer.Condition, Env.VariableMap, Env.FuncMap, Env.Keyfuncs, false)
 				if len(types) != 1 {
 					fmt.Println("The condition isnt one typed!")
 					os.Exit(1)
@@ -925,7 +1007,7 @@ func (Env *Environment) Interpeter() {
 			NewSave := SaveDataEnv{}
 			NewSave.Save(*Env)
 			TempWhile := ParseToken.(parser.WhileLoop)
-			Data, Types := Evaluate(TempWhile.Condition, Env.VariableMap, Env.FuncMap, Env.Keyfuncs)
+			Data, Types := Evaluate(TempWhile.Condition, Env.VariableMap, Env.FuncMap, Env.Keyfuncs, false)
 			if len(Types) > 1 || len(Types) <= 0 || len(Types) == 1 && Types[0] != "int" {
 				parser.Panic("Syntax error", fmt.Sprint("Coudnt load condition!", TempWhile.Condition))
 			}
@@ -945,11 +1027,15 @@ func (Env *Environment) Interpeter() {
 					Env.Output = append(Env.Output, NewEnv.Output...)
 					break
 				}
-				Data, Types = Evaluate(TempWhile.Condition, Env.VariableMap, Env.FuncMap, Env.Keyfuncs)
+				Data, Types = Evaluate(TempWhile.Condition, Env.VariableMap, Env.FuncMap, Env.Keyfuncs, false)
 			}
 			NewSave.LoadTo(Env)
 		case BreakType:
 			Env.Breaked = true
+		case SelectList:
+			TempSelectList := ParseToken.(parser.SectionList)
+			Eval, _ := Evaluate(TempSelectList, Env.VariableMap, Env.FuncMap, Env.Keyfuncs, false)
+			Env.Output = append(Env.Output, Eval)
 		}
 	}
 }
