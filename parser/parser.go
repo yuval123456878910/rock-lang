@@ -6,8 +6,6 @@ import (
 	"slices"
 
 	"rocks/lexer"
-
-	"github.com/sanity-io/litter"
 )
 
 var AviableTypes []string = []string{
@@ -142,6 +140,12 @@ type SectionList struct {
 	Start any
 	End   any
 	Long  bool
+}
+
+type ForLoop struct {
+	Over         any
+	Idenetifires []string
+	Body         []any
 }
 
 func SearchStartToken(Array []lexer.Token, Start int, funcApply func(item any) any, Item any) (int, error) {
@@ -533,7 +537,7 @@ func Parse(Tokens []lexer.Token) []any {
 
 			NewWhile.Condition = ParseBinding(&NewExpr, 0)
 			NewWhile.Body = Parse(Tokens[StartBody+1 : End])
-			litter.Dump(NewWhile)
+			// litter.Dump(NewWhile)
 			Global_Result = append(Global_Result, NewWhile)
 			pos = End
 
@@ -582,6 +586,42 @@ func Parse(Tokens []lexer.Token) []any {
 			}
 			AviableTypes = append(AviableTypes, Name)
 			Global_Result = append(Global_Result, NewStruct)
+		case "for":
+			var NewForLoop ForLoop
+			EqualIndex := pos
+			for !Equals2Token(Tokens[EqualIndex], lexer.Token{"=", lexer.OPERATOR}) {
+				EqualIndex++
+			}
+
+			StartBody, err := SearchStartToken(Tokens, pos, func(item any) any { return item.(lexer.Token).Value }, "{")
+			if err != nil {
+				Panic("Syntax error", "Counldt find the start for the body!")
+			}
+			OverExpress := Expretion{Tokens: Tokens[EqualIndex+1 : StartBody]}
+			NewForLoop.Over = ParseBinding(&OverExpress, 0)
+			Seperation := ReturnsSepOnceTokens(Tokens[pos+1:EqualIndex], lexer.Token{Value: ",", Type: lexer.PUNCTUATOR})
+			for _, Token := range Seperation {
+				if Token.Type != lexer.IDENTIFIER {
+					Panic("Syntax error", "can't get a variable as not as variable")
+				}
+				NewForLoop.Idenetifires = append(NewForLoop.Idenetifires, Token.Value)
+			}
+			BodyStart := lexer.Token{
+				Value: "{",
+				Type:  lexer.PUNCTUATOR,
+			}
+			BodyEnd := lexer.Token{
+				Value: "}",
+				Type:  lexer.PUNCTUATOR,
+			}
+			EndLocation, err2 := FindNexer(StartBody+1, Tokens, BodyStart, BodyEnd)
+			if err2 != nil {
+				Panic("Syntax error", "Couldn't find the end of the block!")
+			}
+			NewForLoop.Body = Parse(Tokens[StartBody+1 : EndLocation])
+			// litter.Dump(NewForLoop)
+			pos = EndLocation
+			Global_Result = append(Global_Result, NewForLoop)
 		}
 
 	}
@@ -890,9 +930,7 @@ func ParseBinding(Express *Expretion, min_bind float32) any {
 			Leftside = NewSelection
 			Express.Pos = End + 1
 			if Express.Pos+1 >= len(Express.Tokens) {
-
 				return Leftside
-
 			}
 
 		} else if RetriveBinding(CurrentToken.Value) >= float32(min_bind) {

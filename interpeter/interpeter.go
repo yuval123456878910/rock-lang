@@ -55,6 +55,7 @@ var (
 	DictType         string   = ReturnType(parser.Dictenary{})
 	AccessMethodType string   = ReturnType(parser.AccessMethod{})
 	SelectList       string   = ReturnType(parser.SectionList{})
+	ForLoopType      string   = ReturnType(parser.ForLoop{})
 )
 
 type StructInstance struct {
@@ -1057,6 +1058,42 @@ func (Env *Environment) Interpeter() {
 			TempSelectList := ParseToken.(parser.SectionList)
 			Eval, _ := Evaluate(TempSelectList, Env.VariableMap, Env.FuncMap, Env.Keyfuncs, false)
 			Env.Output = append(Env.Output, Eval)
+		case ForLoopType:
+			TempForLoop := ParseToken.(parser.ForLoop)
+			OverValue, Type := Evaluate(TempForLoop.Over, Env.VariableMap, Env.FuncMap, Env.Keyfuncs, false)
+
+			switch Typed := OverValue.([]any)[0].(type) {
+			case []any:
+				for _, v := range Typed {
+					RunForLoop(Env, TempForLoop.Body, TempForLoop.Idenetifires, []any{v})
+				}
+			default:
+				parser.Panic("Runtime error", "The given item for the for loop is not a iteriable value! "+Type[0])
+
+			}
 		}
 	}
+}
+
+func RunForLoop(Env *Environment, Body []any, Names []string, Values []any) {
+	NewIdentList := map[string]Ident{}
+	if len(Names) != len(Values) {
+		parser.Panic("Runtime error", fmt.Sprintf("Length of both inputs aren't the same %d, %d", len(Names), len(Values)))
+	}
+
+	for idx, name := range Names {
+		NewIdent := Ident{
+			Value:   Values[idx],
+			IsConst: false,
+			Name:    name,
+		}
+		NewIdentList[name] = NewIdent
+	}
+	Save := SaveDataEnv{}
+	Save.Save(*Env)
+	maps.Copy(Env.VariableMap, NewIdentList)
+	NewInter := NewEnvironment(Body, Env.FuncMap, Env.VariableMap)
+	NewInter.Interpeter()
+	Save.LoadTo(Env)
+
 }

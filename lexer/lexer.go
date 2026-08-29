@@ -16,6 +16,7 @@ const (
 	LinesCommentStart = "#!"
 	LinesCommentEnd   = "!#"
 )
+
 const (
 	LITERAL    = "literal"
 	STRING     = "string"
@@ -29,10 +30,12 @@ const (
 	EOF        = "EOF"
 )
 
-var Keywords []string = []string{"struct", "func", "reach", "int", "string", "float", "any", "var", "const", "list", "dict", "if", "else", "elseif", "break", "continue", "thread", "await", "return", "char", "house", "while"}
-var Operators []byte = []byte{'+', '-', '/', '*', '=', '<', '>', '|', '!'}
-var LegalOperators []string = []string{"+", "-", "/", "=", "+=", "-=", "*=", "/=", "<=", ">=", "|>", "==", "!="}
-var Punctuators []byte = []byte{'(', ')', '[', ']', '{', '}', ':', ',', '.'}
+var (
+	Keywords       []string = []string{"struct", "func", "reach", "int", "string", "float", "any", "var", "const", "list", "dict", "if", "else", "elseif", "break", "continue", "thread", "await", "return", "char", "house", "while", "for"}
+	Operators      []byte   = []byte{'+', '-', '/', '*', '=', '<', '>', '|', '!'}
+	LegalOperators []string = []string{"+", "-", "/", "=", "+=", "-=", "*=", "/=", "<=", ">=", "|>", "==", "!="}
+	Punctuators    []byte   = []byte{'(', ')', '[', ']', '{', '}', ':', ',', '.'}
+)
 
 type Lexer struct {
 	Input  string
@@ -130,8 +133,7 @@ func CanBeNegetive(Text string, pos int) bool {
 		return true
 	}
 	last := Text[FindLastNotSpace(Text, pos-1)]
-	return ((IsOporator(last)) || slices.Contains(Punctuators, last))
-
+	return (IsOporator(last) || slices.Contains(Punctuators, last))
 }
 
 func (l *Lexer) IdentifyWord() {
@@ -254,13 +256,13 @@ func (l *Lexer) IdentifyWord() {
 
 		for (IsOporator(l.ch) && slices.Contains(LegalOperators, string(l.Input[StartingPos:l.pos+1])) || IsOporator(l.ch) && l.pos == StartingPos) && l.pos < len(l.Input) {
 			l.Next()
-
 		}
 		NewToken.Value = string(l.Input[StartingPos:l.pos])
 		NewToken.Type = OPERATOR
 		l.Tokens = append(l.Tokens, NewToken)
 	}
 }
+
 func (l *Lexer) LexerAll() {
 	for l.pos < len(l.Input) {
 		l.IdentifyWord()
