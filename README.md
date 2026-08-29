@@ -135,6 +135,23 @@ Access:
 <struct var>.<method>
 ```
 **WARNING this struct implemeation is not good and i used a lot of ai to create the strcuct.**
+
+# For loop
+With list
+```
+for i = [1,2,3] {
+    ..code
+}
+```
+With dict
+```
+var D dict = {"Sup":1}
+for k,v = D {
+    ..code
+}
+```
+**Because of bad lexer implemetation puting {"Sup":1} derectly inside the for, it will cause a crash!**
+
 # How to run?
 Download the files, install go and run:
 ```

@@ -1,3 +1,4 @@
-for i = [1,2,3] {
-    print(i)
+var d dict = {"sup":1}
+for i,w = d {
+    print(i,w)
 }

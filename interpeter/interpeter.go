@@ -419,7 +419,7 @@ func Evaluate(CalData any, indentMap map[string]Ident, funcMap map[string]parser
 			LeftEval, _ := Evaluate(key, indentMap, funcMap, keyFuncs, false)
 			NewEvalMap[LeftEval] = RightEval
 		}
-		return NewEvalMap, []string{"dict"}
+		return []any{NewEvalMap}, []string{"dict"}
 	case SelectList:
 		var EvalOne any
 		var EvalTwo any
@@ -1066,6 +1066,11 @@ func (Env *Environment) Interpeter() {
 			case []any:
 				for _, v := range Typed {
 					RunForLoop(Env, TempForLoop.Body, TempForLoop.Idenetifires, []any{v})
+				}
+			case map[any]any:
+				for k, v := range Typed {
+
+					RunForLoop(Env, TempForLoop.Body, TempForLoop.Idenetifires, []any{k, v})
 				}
 			default:
 				parser.Panic("Runtime error", "The given item for the for loop is not a iteriable value! "+Type[0])

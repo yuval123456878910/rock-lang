@@ -149,6 +149,7 @@ type ForLoop struct {
 }
 
 func SearchStartToken(Array []lexer.Token, Start int, funcApply func(item any) any, Item any) (int, error) {
+
 	for i := Start; i < len(Array); i++ {
 		if funcApply(Array[i]) == Item {
 			return i, nil
