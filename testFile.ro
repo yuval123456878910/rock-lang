@@ -1,4 +1,2 @@
-var d dict = {"sup":1}
-for i,w = d {
-    print(i,w)
-}
+var d list = [1]
+print(pop(d,0))

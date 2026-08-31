@@ -174,6 +174,14 @@ func NewEnvironment(parseDate []any, funcMap map[string]parser.Function, variabl
 		Data = append(Data, args[1])
 		return Data, []string{"list"}
 	}
+	TempEnv.Keyfuncs["pop"] = func(args ...any) (any, []string) {
+		Data := args[0].([]any)[0].([]any)
+		location := args[1].(int)
+		SideRight := Data[:location]
+		SideLeft := Data[location+1:]
+		Combine := append(SideRight, SideLeft...)
+		return Combine, []string{"list"}
+	}
 	TempEnv.Keyfuncs["look"] = func(args ...any) (any, []string) {
 		Data := args[0].([]any)[0].([]any)
 
@@ -1069,7 +1077,6 @@ func (Env *Environment) Interpeter() {
 				}
 			case map[any]any:
 				for k, v := range Typed {
-
 					RunForLoop(Env, TempForLoop.Body, TempForLoop.Idenetifires, []any{k, v})
 				}
 			default:
@@ -1100,5 +1107,4 @@ func RunForLoop(Env *Environment, Body []any, Names []string, Values []any) {
 	NewInter := NewEnvironment(Body, Env.FuncMap, Env.VariableMap)
 	NewInter.Interpeter()
 	Save.LoadTo(Env)
-
 }

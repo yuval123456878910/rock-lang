@@ -80,10 +80,16 @@ house indexZero = list1[0]
 ```
 house NewList = append(<list>, <data>)
 ```
-returns the added data to the list \
+returns the added data to the list
 ```
 house NewItem = look(<list>, <pos>)
 ```
+look at the location of the list you spesefide
+```
+house NewList = pop(<list>, <pop>)
+```
+return the new list with the given pos missinge 
+
 
 # Thread/Await
 Decleration of a thread:
@@ -137,20 +143,25 @@ Access:
 **WARNING this struct implemeation is not good and i used a lot of ai to create the strcuct.**
 
 # For loop
+Syntax:
+```
+for <args> = (<data>) {
+    ..body
+}
+```
+
 With list
 ```
-for i = [1,2,3] {
+for i = ([1,2,3]) {
     ..code
 }
 ```
 With dict
 ```
-var D dict = {"Sup":1}
-for k,v = D {
+for k,v = ({"SUP":1}) {
     ..code
 }
 ```
-**Because of bad lexer implemetation puting {"Sup":1} derectly inside the for, it will cause a crash!**
 
 # How to run?
 Download the files, install go and run:

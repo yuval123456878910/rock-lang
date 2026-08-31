@@ -149,7 +149,6 @@ type ForLoop struct {
 }
 
 func SearchStartToken(Array []lexer.Token, Start int, funcApply func(item any) any, Item any) (int, error) {
-
 	for i := Start; i < len(Array); i++ {
 		if funcApply(Array[i]) == Item {
 			return i, nil
@@ -588,17 +587,28 @@ func Parse(Tokens []lexer.Token) []any {
 			AviableTypes = append(AviableTypes, Name)
 			Global_Result = append(Global_Result, NewStruct)
 		case "for":
+			/*
+			* 				for i = ([1,2,3]) {
+			*
+			* 				}
+			 */
 			var NewForLoop ForLoop
 			EqualIndex := pos
 			for !Equals2Token(Tokens[EqualIndex], lexer.Token{"=", lexer.OPERATOR}) {
 				EqualIndex++
 			}
-
-			StartBody, err := SearchStartToken(Tokens, pos, func(item any) any { return item.(lexer.Token).Value }, "{")
+			if !Equals2Token(Tokens[EqualIndex+1], lexer.Token{Type: lexer.PUNCTUATOR, Value: "("}) {
+				Panic("Syntax error", "after the '=' has to be '('")
+			}
+			StartToFindBody, err3 := FindNexer(EqualIndex+1, Tokens, lexer.Token{Type: lexer.PUNCTUATOR, Value: "("}, lexer.Token{Type: lexer.PUNCTUATOR, Value: ")"})
+			if err3 != nil {
+				Panic("Syntax error", "Count find the end for the 'for' loop body")
+			}
+			StartBody, err := SearchStartToken(Tokens, StartToFindBody, func(item any) any { return item.(lexer.Token).Value }, "{")
 			if err != nil {
 				Panic("Syntax error", "Counldt find the start for the body!")
 			}
-			OverExpress := Expretion{Tokens: Tokens[EqualIndex+1 : StartBody]}
+			OverExpress := Expretion{Tokens: Tokens[EqualIndex+2 : StartToFindBody]}
 			NewForLoop.Over = ParseBinding(&OverExpress, 0)
 			Seperation := ReturnsSepOnceTokens(Tokens[pos+1:EqualIndex], lexer.Token{Value: ",", Type: lexer.PUNCTUATOR})
 			for _, Token := range Seperation {
