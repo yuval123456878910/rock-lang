@@ -144,8 +144,11 @@ func GetStartValueType(Env Environment, TypeGot string) (any, error) {
 	return DefualValue, nil
 }
 
-var SetReached map[string]string = map[string]string{
+var SetReachedRock map[string]string = map[string]string{
 	"strtools": "$/lib/strtools.ro",
+}
+var SetReachedEnv map[string]Environment = map[string]Environment{
+	"conv": convLibEnv,
 }
 
 func NewEnvironment(parseDate []any, funcMap map[string]parser.Function, variableMap map[string]Ident) Environment {
@@ -991,8 +994,12 @@ func (Env *Environment) Interpeter() {
 
 			TempReach := ParseToken.(parser.Reach)
 			Path := TempReach.Path
-			if pathSet, ok := SetReached[Path]; ok {
+			if pathSet, ok := SetReachedRock[Path]; ok {
 				Path = pathSet
+			}
+			if pathSetEnv, ok2 := SetReachedEnv[Path]; ok2 {
+				maps.Copy(Env.Keyfuncs, pathSetEnv.Keyfuncs)
+				continue
 			}
 			if IsLink(Path) {
 				Data, err := http.Get(Path)

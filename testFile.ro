@@ -1,8 +1,4 @@
 reach "strtools"
-
-var a list = split("wow wsd sup", " ")
-
-print(a)
-for p = (a) {
-    print(p)
-}
+reach "conv"
+house num = to_int("1")
+print(num+1)

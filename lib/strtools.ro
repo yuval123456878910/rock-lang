@@ -16,3 +16,11 @@ func split(string name string letter) (list) {
     }
     return new_list
 }
+
+func ToUpperCase(string text) (char) {
+    house NewString = ""
+    for s = (text) {
+        NewString = NewString+(s+27)
+    }
+    return 
+}
