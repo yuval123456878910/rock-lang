@@ -1,2 +1,8 @@
-var d list = [1]
-print(pop(d,0))
+reach "strtools"
+
+var a list = split("wow wsd sup", " ")
+
+print(a)
+for p = (a) {
+    print(p)
+}

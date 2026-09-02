@@ -144,6 +144,10 @@ func GetStartValueType(Env Environment, TypeGot string) (any, error) {
 	return DefualValue, nil
 }
 
+var SetReached map[string]string = map[string]string{
+	"strtools": "$/lib/strtools.ro",
+}
+
 func NewEnvironment(parseDate []any, funcMap map[string]parser.Function, variableMap map[string]Ident) Environment {
 	TempEnv := Environment{}
 	TempEnv.FuncMap = funcMap
@@ -154,10 +158,11 @@ func NewEnvironment(parseDate []any, funcMap map[string]parser.Function, variabl
 	TempEnv.Returned = false
 	TempEnv.Breaked = false
 	TempEnv.Keyfuncs["print"] = Keyfunc(func(args ...any) (any, []string) {
+
 		for _, arg := range args {
 			switch Targ := arg.(type) {
 			case []any:
-				fmt.Print(Targ...)
+				fmt.Print(Targ)
 				fmt.Print(" ")
 			case *Ident:
 				fmt.Print(Targ.Value)
@@ -170,8 +175,16 @@ func NewEnvironment(parseDate []any, funcMap map[string]parser.Function, variabl
 		return args, []string{"any"}
 	})
 	TempEnv.Keyfuncs["append"] = func(args ...any) (any, []string) {
-		Data := args[0].([]any)[0].([]any)
+
+		BetterArgs := args[0].([]any)
+
+		switch BetterArgs[0].(type) {
+		case []any:
+			BetterArgs = BetterArgs[0].([]any)
+		}
+		Data := BetterArgs
 		Data = append(Data, args[1])
+
 		return Data, []string{"list"}
 	}
 	TempEnv.Keyfuncs["pop"] = func(args ...any) (any, []string) {
@@ -440,6 +453,7 @@ func Evaluate(CalData any, indentMap map[string]Ident, funcMap map[string]parser
 		}
 		switch value, _ := Evaluate(TempSelectList.List, indentMap, funcMap, keyFuncs, false); value.(type) {
 		case []any:
+
 			Section := GetDataFromSelectList(value.([]any)[0].([]any), EvalOne, EvalTwo, TempSelectList.Long)
 
 			if len(Section.([]any)) == 1 {
@@ -977,6 +991,9 @@ func (Env *Environment) Interpeter() {
 
 			TempReach := ParseToken.(parser.Reach)
 			Path := TempReach.Path
+			if pathSet, ok := SetReached[Path]; ok {
+				Path = pathSet
+			}
 			if IsLink(Path) {
 				Data, err := http.Get(Path)
 				if err != nil {
@@ -1070,7 +1087,8 @@ func (Env *Environment) Interpeter() {
 			TempForLoop := ParseToken.(parser.ForLoop)
 			OverValue, Type := Evaluate(TempForLoop.Over, Env.VariableMap, Env.FuncMap, Env.Keyfuncs, false)
 
-			switch Typed := OverValue.([]any)[0].(type) {
+			switch Typed := OverValue.(type) {
+
 			case []any:
 				for _, v := range Typed {
 					RunForLoop(Env, TempForLoop.Body, TempForLoop.Idenetifires, []any{v})
@@ -1078,6 +1096,11 @@ func (Env *Environment) Interpeter() {
 			case map[any]any:
 				for k, v := range Typed {
 					RunForLoop(Env, TempForLoop.Body, TempForLoop.Idenetifires, []any{k, v})
+				}
+
+			case string:
+				for _, v := range Typed {
+					RunForLoop(Env, TempForLoop.Body, TempForLoop.Idenetifires, []any{string(v)})
 				}
 			default:
 				parser.Panic("Runtime error", "The given item for the for loop is not a iteriable value! "+Type[0])

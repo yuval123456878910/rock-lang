@@ -1,0 +1,18 @@
+# splits line with the letter 
+func split(string name string letter) (list) {
+    var new_list list = []
+    var temp_string string = ""
+    for i = (name) {
+        if i == letter {
+            new_list = append(new_list, temp_string)
+            temp_string = ""
+        } else {
+            temp_string = temp_string + i
+        }
+    }
+    if temp_string != "" {
+        new_list = append(new_list,temp_string)
+
+    }
+    return new_list
+}
