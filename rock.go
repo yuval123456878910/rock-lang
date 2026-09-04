@@ -17,12 +17,12 @@ func main() {
 	L1.CorrectBackSlash()
 	L1.LexerAll()
 	L1.AddEOF()
-	//fmt.Println(L1.Tokens)
+	// fmt.Println(L1.Tokens)
 	parser := parserIm.Parser{}
 	parser.Input = L1.Tokens
 	parser.Parsing()
 
-	//litter.Dump(parser.Output...)
-	NewEnv := interpeter.NewEnvironment(parser.Output, map[string]parserIm.Function{}, map[string]interpeter.Ident{})
+	// litter.Dump(parser.Output...)
+	NewEnv := interpeter.NewEnvironment(parser.Output, map[string]parserIm.Function{}, map[string]interpeter.Ident{}, map[string]interpeter.Keyfunc{}, map[string]parserIm.Struct{})
 	NewEnv.Interpeter()
 }

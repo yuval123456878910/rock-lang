@@ -32,8 +32,8 @@ const (
 
 var (
 	Keywords       []string = []string{"struct", "func", "reach", "int", "string", "float", "any", "var", "const", "list", "dict", "if", "else", "elseif", "break", "continue", "thread", "await", "return", "char", "house", "while", "for"}
-	Operators      []byte   = []byte{'+', '-', '/', '*', '=', '<', '>', '|', '!'}
-	LegalOperators []string = []string{"+", "-", "/", "=", "+=", "-=", "*=", "/=", "<=", ">=", "|>", "==", "!="}
+	Operators      []byte   = []byte{'+', '-', '/', '*', '=', '<', '>', '|', '!', '&'}
+	LegalOperators []string = []string{"+", "-", "/", "=", "+=", "-=", "*=", "/=", "<=", ">=", "|>", "==", "!=", "&&", "||"}
 	Punctuators    []byte   = []byte{'(', ')', '[', ']', '{', '}', ':', ',', '.'}
 )
 

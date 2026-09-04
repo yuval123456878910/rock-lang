@@ -1,3 +1,5 @@
+reach "conv"
+
 # splits line with the letter 
 func split(string name string letter) (list) {
     var new_list list = []
@@ -17,10 +19,17 @@ func split(string name string letter) (list) {
     return new_list
 }
 
-func ToUpperCase(string text) (char) {
+func to_upper(string text) (char) {
     house NewString = ""
     for s = (text) {
-        NewString = NewString+(s+27)
+        house B = to_char(s)
+        if B >= 'a' && B <= 'z' {
+            NewString = NewString+to_string(B-32)
+        } else {
+            NewString = NewString+s
+        }
+        
     }
-    return 
+    
+    return NewString
 }

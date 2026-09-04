@@ -1,4 +1,3 @@
 reach "strtools"
-reach "conv"
-house num = to_int("1")
-print(num+1)
+
+print(to_upper("hello \n\t world"))

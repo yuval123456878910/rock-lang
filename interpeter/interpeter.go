@@ -14,6 +14,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"reflect"
 	"slices"
 	"strconv"
 	"strings"
@@ -151,13 +152,13 @@ var SetReachedEnv map[string]Environment = map[string]Environment{
 	"conv": convLibEnv,
 }
 
-func NewEnvironment(parseDate []any, funcMap map[string]parser.Function, variableMap map[string]Ident) Environment {
+func NewEnvironment(parseDate []any, funcMap map[string]parser.Function, variableMap map[string]Ident, keyFuncs map[string]Keyfunc, structsMaps map[string]parser.Struct) Environment {
 	TempEnv := Environment{}
 	TempEnv.FuncMap = funcMap
 	TempEnv.VariableMap = variableMap
 	TempEnv.ParseDate = parseDate
-	TempEnv.Keyfuncs = map[string]Keyfunc{}
-	TempEnv.StructMap = map[string]parser.Struct{}
+	TempEnv.Keyfuncs = keyFuncs
+	TempEnv.StructMap = structsMaps
 	TempEnv.Returned = false
 	TempEnv.Breaked = false
 	TempEnv.Keyfuncs["print"] = Keyfunc(func(args ...any) (any, []string) {
@@ -300,6 +301,31 @@ func GetToSelection(Env *Environment, Select *parser.SectionList) *any {
 	return &V
 }
 
+func bigger_or_equals[T int | float64, R int | float64](n T, m R) int {
+	return BoolToInt(float64(n) >= float64(m))
+}
+func less_or_equals[T int | float64, R int | float64](n T, m R) int {
+	return BoolToInt(float64(n) <= float64(m))
+}
+
+type EvalBool[T int | float64, R int | float64] func(n T, m T) int
+
+func condition_eval[T float64 | int, R float64 | int](RightSide any, LeftSide any, funct EvalBool[T, R]) (int, []string) {
+
+	if !slices.Contains(ApproveSideToOp, ReturnType(LeftSide)) && !slices.Contains(ApproveSideToOp, ReturnType(RightSide)) {
+		fmt.Println("Cant do None type!", ReturnType(LeftSide), ReturnType(RightSide))
+	}
+	return funct(LeftSide.(T), RightSide.(T)), []string{"int"}
+}
+
+type package_switch struct {
+	packaged string
+}
+
+func package_to_switch(args ...string) package_switch {
+	return package_switch{packaged: strings.Join(args, ",")}
+}
+
 func Evaluate(CalData any, indentMap map[string]Ident, funcMap map[string]parser.Function, keyFuncs map[string]Keyfunc, ReturnSelectListPointer bool) (any, []string) {
 	var Value any
 	CalType := ReturnType(CalData)
@@ -374,6 +400,7 @@ func Evaluate(CalData any, indentMap map[string]Ident, funcMap map[string]parser
 		}
 
 		NewEnv := Environment{ParseDate: CallFunc.Body, VariableMap: CallVarMap, FuncMap: funcMap, Keyfuncs: keyFuncs}
+
 		NewEnv.Interpeter()
 		Types := []string{}
 
@@ -510,6 +537,10 @@ func Evaluate(CalData any, indentMap map[string]Ident, funcMap map[string]parser
 
 		switch left := LeftSide.(type) {
 		case int:
+			right3, ok3 := RightSide.(byte)
+			if ok3 {
+				return right3 + byte(left), []string{"char"}
+			}
 			right, ok := RightSide.(int)
 			if ok {
 				return left + right, []string{"int"}
@@ -518,10 +549,7 @@ func Evaluate(CalData any, indentMap map[string]Ident, funcMap map[string]parser
 			if ok2 {
 				return right2 + float64(left), []string{"float"}
 			}
-			right3, ok3 := RightSide.(byte)
-			if ok3 {
-				return right3 + byte(left), []string{"char"}
-			}
+
 		case float64:
 			right, ok := RightSide.(int)
 			if ok {
@@ -535,19 +563,21 @@ func Evaluate(CalData any, indentMap map[string]Ident, funcMap map[string]parser
 			os.Exit(1)
 
 		case string:
+
 			right, ok := RightSide.(string)
 			if !ok {
 				fmt.Println("Cant add to a string, a none string", RightSide)
 			}
 			return left + right, []string{"string"}
 		case byte:
+
 			right, ok := RightSide.(int)
 			if ok {
-				return right + int(left), []string{"int"}
+				return byte(right + int(left)), []string{"char"}
 			}
 			right2, ok2 := RightSide.(byte)
 			if ok2 {
-				return left + right2, []string{"byte"}
+				return left + right2, []string{"char"}
 			}
 			fmt.Println("Can't add to a byte a incompatible type!")
 		}
@@ -569,7 +599,7 @@ func Evaluate(CalData any, indentMap map[string]Ident, funcMap map[string]parser
 			}
 			right3, ok3 := RightSide.(byte)
 			if ok3 {
-				return byte(left) - right3, []string{"byte"}
+				return byte(left) - right3, []string{"char"}
 			}
 			fmt.Println("Can't added an incompatible type to an integer!")
 			os.Exit(1)
@@ -589,11 +619,11 @@ func Evaluate(CalData any, indentMap map[string]Ident, funcMap map[string]parser
 
 			right, ok := RightSide.(int)
 			if ok {
-				return int(left) - right, []string{"int"}
+				return byte(int(left) - right), []string{"char"}
 			}
 			right2, ok2 := RightSide.(byte)
 			if ok2 {
-				return left - right2, []string{"byte"}
+				return left - right2, []string{"char"}
 			}
 			fmt.Println("Can't substract to a byte a incompatible type!")
 			os.Exit(1)
@@ -673,6 +703,93 @@ func Evaluate(CalData any, indentMap map[string]Ident, funcMap map[string]parser
 		LeftSide, _ := Evaluate(op.Left, indentMap, funcMap, keyFuncs, false)
 		RightSide, _ := Evaluate(op.Right, indentMap, funcMap, keyFuncs, false)
 		return BoolToInt(LeftSide != RightSide), []string{"int"}
+	case ">=":
+		LeftSide, _ := Evaluate(op.Left, indentMap, funcMap, keyFuncs, false)
+		RightSide, _ := Evaluate(op.Right, indentMap, funcMap, keyFuncs, false)
+
+		RV := RightSide
+		LV := RightSide
+		if reflect.TypeOf(RV).String() == "uint8" {
+			RV = int(RightSide.(uint8))
+		}
+
+		if reflect.TypeOf(LV).String() == "uint8" {
+			LV = int(LeftSide.(uint8))
+		}
+
+		TypeOf1 := reflect.TypeOf(RV).String()
+		TypeOf2 := reflect.TypeOf(LV).String()
+		V := package_to_switch(TypeOf1, TypeOf2)
+
+		switch V {
+		case package_to_switch("int", "int"):
+			return condition_eval[int, int](RV, LV, bigger_or_equals)
+		case package_to_switch("int", "float"):
+			return condition_eval[int, float64](RV, LV, bigger_or_equals)
+		case package_to_switch("float", "int"):
+			return condition_eval[float64, int](RV, LV, bigger_or_equals)
+		case package_to_switch("float", "float"):
+			return condition_eval[float64, float64](RV, LV, bigger_or_equals)
+		}
+
+		return 0, []string{"int"}
+	case "<=":
+		LeftSide, _ := Evaluate(op.Left, indentMap, funcMap, keyFuncs, false)
+		RightSide, _ := Evaluate(op.Right, indentMap, funcMap, keyFuncs, false)
+
+		RV := RightSide
+		LV := RightSide
+		if reflect.TypeOf(RV).String() == "uint8" {
+			RV = int(RightSide.(uint8))
+		}
+
+		if reflect.TypeOf(LV).String() == "uint8" {
+			LV = int(LeftSide.(uint8))
+		}
+
+		TypeOf1 := reflect.TypeOf(RV).String()
+		TypeOf2 := reflect.TypeOf(LV).String()
+
+		V := package_to_switch(TypeOf1, TypeOf2)
+
+		switch V {
+		case package_to_switch("int", "int"):
+			return condition_eval[int, int](RV, LV, less_or_equals)
+		case package_to_switch("int", "float"):
+			return condition_eval[int, float64](RV, LV, less_or_equals)
+		case package_to_switch("float", "int"):
+			return condition_eval[float64, int](RV, LV, less_or_equals)
+		case package_to_switch("float", "float"):
+			return condition_eval[float64, float64](RV, LV, less_or_equals)
+		}
+		parser.Panic("Runtime error", "Counldn't match "+TypeOf1+" and "+TypeOf2)
+		return 0, []string{"int"}
+	case "&&":
+		LeftSide, T1 := Evaluate(op.Left, indentMap, funcMap, keyFuncs, false)
+		RightSide, T2 := Evaluate(op.Right, indentMap, funcMap, keyFuncs, false)
+		if len(T1) > 1 || len(T2) > 1 {
+			parser.Panic("Runtime error", "AND oporation couned resive more than one args")
+		}
+
+		LeftSideInt, ok := LeftSide.(int)
+		RightSideInt, ok2 := RightSide.(int)
+		if !ok || !ok2 {
+			parser.Panic("Runtime error", "counldn't oporate AND oporation on none int resualt")
+		}
+		return BoolToInt(LeftSideInt == 1 && RightSideInt == 1), []string{"int"}
+	case "||":
+		LeftSide, T1 := Evaluate(op.Left, indentMap, funcMap, keyFuncs, false)
+		RightSide, T2 := Evaluate(op.Right, indentMap, funcMap, keyFuncs, false)
+		if len(T1) > 1 || len(T2) > 1 {
+			parser.Panic("Runtime error", "AND oporation couned resive more than one args")
+		}
+
+		LeftSideInt, ok := LeftSide.(int)
+		RightSideInt, ok2 := RightSide.(int)
+		if !ok || !ok2 {
+			parser.Panic("Runtime error", "counldn't oporate AND oporation on none int resualt")
+		}
+		return BoolToInt(LeftSideInt == 1 || RightSideInt == 1), []string{"int"}
 	case ">":
 
 		LeftSide, _ := Evaluate(op.Left, indentMap, funcMap, keyFuncs, false)
@@ -818,9 +935,11 @@ func (Env *Environment) Interpeter() {
 			TempValues := []any{}
 			for idx, ident := range TempCall.ParimitersInput {
 				callEval, _ := Evaluate(ident, Env.VariableMap, Env.FuncMap, Env.Keyfuncs, false)
+
 				if ok2 {
 					TempValues = append(TempValues, callEval)
 				} else {
+
 					CallVarMap[CallFunc.Perameters[idx].Name] = Ident{Value: callEval, Name: CallFunc.Perameters[idx].Name, Type: CallFunc.Perameters[idx].Type, IsConst: false}
 				}
 
@@ -974,7 +1093,7 @@ func (Env *Environment) Interpeter() {
 				if Values.(int) == 1 {
 					NewSave := SaveDataEnv{}
 					NewSave.Save(*Env)
-					NewEnv := NewEnvironment(TempIfPointer.Body, Env.FuncMap, Env.VariableMap)
+					NewEnv := NewEnvironment(TempIfPointer.Body, Env.FuncMap, Env.VariableMap, Env.Keyfuncs, Env.StructMap)
 					NewEnv.Interpeter()
 					if NewEnv.Returned {
 						Env.Output = append(Env.Output, NewEnv.Output...)
@@ -996,6 +1115,7 @@ func (Env *Environment) Interpeter() {
 			Path := TempReach.Path
 			if pathSet, ok := SetReachedRock[Path]; ok {
 				Path = pathSet
+
 			}
 			if pathSetEnv, ok2 := SetReachedEnv[Path]; ok2 {
 				maps.Copy(Env.Keyfuncs, pathSetEnv.Keyfuncs)
@@ -1055,6 +1175,7 @@ func (Env *Environment) Interpeter() {
 
 			ParserProsses := parser.Parse(LexerProsses.Tokens)
 			Env.ParseDate = slices.Insert(Env.ParseDate, i+1, ParserProsses...)
+
 			ReachImported = append(ReachImported, Path)
 			continue
 		case WhileType:
@@ -1068,7 +1189,7 @@ func (Env *Environment) Interpeter() {
 			for Data.(int) == 1 {
 				// FIX: Pass Env.VariableMap directly so mutated variables persist inside the loop
 
-				NewEnv := NewEnvironment(TempWhile.Body, Env.FuncMap, Env.VariableMap)
+				NewEnv := NewEnvironment(TempWhile.Body, Env.FuncMap, Env.VariableMap, Env.Keyfuncs, Env.StructMap)
 				NewEnv.Interpeter()
 
 				// FIX: If return triggered inside while loop, exit the entire block
@@ -1134,7 +1255,7 @@ func RunForLoop(Env *Environment, Body []any, Names []string, Values []any) {
 	Save := SaveDataEnv{}
 	Save.Save(*Env)
 	maps.Copy(Env.VariableMap, NewIdentList)
-	NewInter := NewEnvironment(Body, Env.FuncMap, Env.VariableMap)
+	NewInter := NewEnvironment(Body, Env.FuncMap, Env.VariableMap, Env.Keyfuncs, Env.StructMap)
 	NewInter.Interpeter()
 	Save.LoadTo(Env)
 }

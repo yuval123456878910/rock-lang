@@ -719,6 +719,11 @@ var Binding map[string]float32 = map[string]float32{
 	"|>": 1,
 	".":  1,
 
+	"||": 1.2,
+
+	// Logical AND (Evaluated AFTER comparisons, BEFORE OR)
+	"&&": 1.5,
+
 	// Comparisons (Run AFTER math, but BEFORE pipes)
 	"==": 2,
 	"!=": 2,
@@ -947,7 +952,7 @@ func ParseBinding(Express *Expretion, min_bind float32) any {
 		} else if RetriveBinding(CurrentToken.Value) >= float32(min_bind) {
 
 			Express.Next()
-			var Rightside any = ParseBinding(Express, RetriveBinding(CurrentToken.Value)+1)
+			var Rightside any = ParseBinding(Express, RetriveBinding(CurrentToken.Value)+0.1)
 			Leftside = Oporation{Op: CurrentToken.Value, Right: Rightside, Left: Leftside}
 
 		} else {

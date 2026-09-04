@@ -19,7 +19,7 @@ var convLibEnv Environment = Environment{
 			}
 			return "", []string{"string"}
 		},
-		"to_byte": func(args ...any) (any, []string) {
+		"to_char": func(args ...any) (any, []string) {
 			stringText, ok := args[0].(string)
 			if !ok {
 				parser.Panic("Runtime error", "Counl't not translate between 'type' to byte")
