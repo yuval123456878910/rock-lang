@@ -13,8 +13,8 @@ import (
 
 const (
 	OneComment        = "#"
-	LinesCommentStart = "#!"
-	LinesCommentEnd   = "!#"
+	LinesCommentStart = "#;"
+	LinesCommentEnd   = ";#"
 )
 
 const (

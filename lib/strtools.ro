@@ -33,3 +33,24 @@ func to_upper(string text) (char) {
     
     return NewString
 }
+
+func reaplace(string text string old string new) (string) {
+    var newText string = ""
+    house pos = 0
+    while len(text)>pos  {
+        
+        if  pos+len(old)> len(text) {
+            newText = newText+text[pos]
+            pos = pos + 1
+            continue
+        } 
+        if text[pos:pos+len(old)] == old{
+            newText = newText+new
+            pos = pos+len(old)+1
+            continue
+        }
+        newText = newText+text[pos]
+        pos = pos + 1
+    }
+    return newText
+}

@@ -8,9 +8,9 @@ print("hello word")
 ## commets
 ```
 # - for one line
-#!
+#;
     for multipale lines
-!#
+;#
 ```
 
 ## Set varubles
@@ -82,10 +82,7 @@ house indexZero = list1[0]
 house NewList = append(<list>, <data>)
 ```
 returns the added data to the list
-```
-house NewItem = look(<list>, <pos>)
-```
-look at the location of the list you spesefide
+
 ```
 house NewList = pop(<list>, <pop>)
 ```

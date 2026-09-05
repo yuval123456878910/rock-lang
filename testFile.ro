@@ -1,3 +1,25 @@
-house a = [1,2,3,4]
-a[1] = 3
-print(3+1)
+reach "strtools"
+
+var test1 string = "sup banana"
+print(reaplace(test1, "banana", "NO"))
+
+var test2 string = "banana sup"
+print(reaplace(test2, "banana", "NO"))
+
+var test3 string = "banana sup banana"
+print(reaplace(test3, "banana", "NO"))
+
+var test4 string = "sup orange"
+print(reaplace(test4, "banana", "NO"))
+
+var test5 string = "sup banana"
+print(reaplace(test5, "banana", ""))
+
+var test6 string = "hi"
+print(reaplace(test6, "banana", "NO"))
+
+var test7 string = "a"
+print(reaplace(test7, "a", "banana"))
+
+var test8 string = ""
+print(reaplace(test8, "banana", "NO"))

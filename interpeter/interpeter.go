@@ -201,20 +201,7 @@ func NewEnvironment(parseDate []any, funcMap map[string]parser.Function, variabl
 		Combine := append(SideRight, SideLeft...)
 		return Combine, []string{"list"}
 	}
-	TempEnv.Keyfuncs["look"] = func(args ...any) (any, []string) {
-		Data := args[0].([]any)[0].([]any)
 
-		TypeReturn := "any"
-		switch DataReturn := Data[args[1].(int)].(type) {
-		case int:
-			return DataReturn, []string{"int"}
-		case float64:
-			return DataReturn, []string{"float"}
-		case string:
-			return DataReturn, []string{"string"}
-		}
-		return Data[args[1].(int)], []string{TypeReturn}
-	}
 	TempEnv.Keyfuncs["scan"] = func(args ...any) (any, []string) {
 		Text := args[0].(string)
 		fmt.Print(Text)
@@ -223,9 +210,16 @@ func NewEnvironment(parseDate []any, funcMap map[string]parser.Function, variabl
 		}
 		return Scanner.Text(), []string{"string"}
 	}
-	TempEnv.Keyfuncs["at"] = func(args ...any) (any, []string) {
-		dict := args[0].(map[any]any)
-		return dict[args[1]], []string{"any"}
+	TempEnv.Keyfuncs["len"] = func(args ...any) (any, []string) {
+		switch Targ := args[0].(type) {
+		case string:
+			return len(Targ), []string{"int"}
+		case []any:
+			return len(Targ[0].([]any)), []string{"int"}
+		default:
+			parser.Panic("Runtime error", "no avaible length for the object given")
+		}
+		return 0, []string{"int"}
 	}
 	return TempEnv
 }
