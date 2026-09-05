@@ -168,7 +168,7 @@ func NewEnvironment(parseDate []any, funcMap map[string]parser.Function, variabl
 		for _, arg := range args {
 			switch Targ := arg.(type) {
 			case []any:
-				fmt.Print(Targ)
+				fmt.Print(Targ...)
 				fmt.Print(" ")
 			case *Ident:
 				fmt.Print(Targ.Value)
@@ -367,13 +367,12 @@ func Evaluate(CalData any, indentMap map[string]Ident, funcMap map[string]parser
 
 		TempList := CalData.(parser.List)
 		NewList := []any{}
-		NewTypes := []string{}
+
 		for _, item := range TempList.Items {
-			NewItems, NewType := Evaluate(item, indentMap, funcMap, keyFuncs, false)
+			NewItems, _ := Evaluate(item, indentMap, funcMap, keyFuncs, false)
 			NewList = append(NewList, NewItems)
-			NewTypes = append(NewTypes, NewType...)
 		}
-		return []any{NewList}, NewTypes
+		return []any{NewList}, []string{"list"}
 	case ReturnType(parser.CallFunction{}):
 		TempCall := CalData.(parser.CallFunction)
 
