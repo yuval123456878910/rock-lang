@@ -1,11 +1,11 @@
 # Rocks proggraming launguage
 **This project containes a lot of ai generated content**
-# Print hello world:
+## Print "hello world":
 ```
 print("hello word")
 ```
 
-# commets
+## commets
 ```
 # - for one line
 #!
@@ -13,7 +13,7 @@ print("hello word")
 !#
 ```
 
-# Set varubles
+## Set varubles
 ```
 var a int = 4
 const b int = 10
@@ -22,7 +22,7 @@ house c = 10
 avaible types: string, int, float \
 **House** is auto type but always mutible
 
-# Func
+## Func
 ```
 func name(int num float num2) (string int) {
     ...
@@ -31,7 +31,7 @@ func name(int num float num2) (string int) {
 condition: [type] [name] /
 no need for "," in perameters and return values
 
-# Reach
+## Reach
 ```
 reach "$/hello.ro"
 ```
@@ -41,16 +41,16 @@ You can also put a link to a file online:
 ```
 reach "http://...."
 ```
-# Return
+## Return
 ```
 return 1, "2"
 ```
 return [data]
 
-# Conditions
+## Conditions
 All condtions are integers: 10 > 1 = 1
 
-# If-Elseif-Else
+## If-Elseif-Else
 ```
 if [condition]  {
     ...
@@ -61,22 +61,23 @@ if [condition]  {
 }
 ```
 
-# While
+## While
 ```
 while [condition] {
     ...
 }
 ```
-use `break` to stop
+use `break` to stop \
+use `continue` to continue
 
-# List
+## List
 To assine a list you can only use the var keyword, not house because house will assine all the elements to agiven args in house.
 ```
 house list1 = [1,2,3] 
 house indexZero = list1[0]
 ```
 
-# Build in list functions
+## Build in list functions
 ```
 house NewList = append(<list>, <data>)
 ```
@@ -91,7 +92,7 @@ house NewList = pop(<list>, <pop>)
 return the new list with the given pos missinge 
 
 
-# Thread/Await
+## Thread/Await
 Decleration of a thread:
 ```
 House mythread = thread [function]
@@ -101,13 +102,13 @@ To access the thread return values you do:
 House [values] = await mythread
 ```
 **YOU ONLY CAN USE THE HOUSE KEYWORD!**
-# Scan
+## Scan
 To get an input you use scan keyfunc:
 ```
 house Text = scan(<text>)
 ```
 
-# Pipe oporation
+## Pipe oporation
 to pass an arg to a function with a lot of readability, use '|>'!
 ```
 house <name> = <data> |> <function>
@@ -119,7 +120,7 @@ house a = list1 |> look(1)
 print(a)
 ```
 
-# Dict
+## Dict
 ```
 var <name> dict = {<item>:<value>}
 ```
@@ -128,7 +129,7 @@ to get an item you do this:
 <var dict>[<name>]
 ```
 
-# Struct
+## Struct
 decleration:
 ```
 struct <name> {
@@ -142,7 +143,7 @@ Access:
 ```
 **WARNING this struct implemeation is not good and i used a lot of ai to create the strcuct.**
 
-# For loop
+## For loop
 Syntax:
 ```
 for <args> = (<data>) {
@@ -162,9 +163,14 @@ for k,v = ({"SUP":1}) {
     ..code
 }
 ```
+use `break` to stop
+use `continue` to continue
 
-# How to run?
+## How to run?
 Download the files, install go and run:
 ```
 go run rock.go <filepath>
 ```
+
+## notes
+while and for loop are buggy and the `continue` and `break` could break randomly!!

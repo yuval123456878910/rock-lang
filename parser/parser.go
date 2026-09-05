@@ -148,6 +148,8 @@ type ForLoop struct {
 	Body         []any
 }
 
+type Continue struct{}
+
 func SearchStartToken(Array []lexer.Token, Start int, funcApply func(item any) any, Item any) (int, error) {
 	for i := Start; i < len(Array); i++ {
 		if funcApply(Array[i]) == Item {
@@ -633,6 +635,10 @@ func Parse(Tokens []lexer.Token) []any {
 			// litter.Dump(NewForLoop)
 			pos = EndLocation
 			Global_Result = append(Global_Result, NewForLoop)
+		case "continue":
+			NewContinue := Continue{}
+			pos++
+			Global_Result = append(Global_Result, NewContinue)
 		}
 
 	}

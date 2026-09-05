@@ -77,6 +77,7 @@ type Environment struct {
 	Returned    bool
 	Breaked     bool
 	StructMap   map[string]parser.Struct
+	Continue    bool
 }
 
 func BoolToInt(Bool bool) int {
@@ -161,6 +162,7 @@ func NewEnvironment(parseDate []any, funcMap map[string]parser.Function, variabl
 	TempEnv.StructMap = structsMaps
 	TempEnv.Returned = false
 	TempEnv.Breaked = false
+	TempEnv.Continue = false
 	TempEnv.Keyfuncs["print"] = Keyfunc(func(args ...any) (any, []string) {
 
 		for _, arg := range args {
@@ -861,8 +863,15 @@ func (Env *Environment) Interpeter() {
 	if Env.FuncMap == nil {
 		Env.FuncMap = map[string]parser.Function{}
 	}
+
 	for i := 0; i < len(Env.ParseDate); i++ {
+
 		ParseToken := Env.ParseDate[i]
+
+		if _, Is := ParseToken.(parser.Continue); Is {
+			Env.Continue = true
+			return
+		}
 		// fmt.Println(ParseToken)
 		switch ReturnType(ParseToken) {
 		case FuncType:
@@ -1100,6 +1109,11 @@ func (Env *Environment) Interpeter() {
 						return
 					}
 					NewSave.LoadTo(Env)
+					Env.Breaked = NewEnv.Breaked
+					Env.Continue = NewEnv.Continue
+					if Env.Breaked || Env.Continue {
+						return
+					}
 					break
 
 				}
@@ -1207,6 +1221,7 @@ func (Env *Environment) Interpeter() {
 			NewSave.LoadTo(Env)
 		case BreakType:
 			Env.Breaked = true
+			return
 		case SelectList:
 			TempSelectList := ParseToken.(parser.SectionList)
 			Eval, _ := Evaluate(TempSelectList, Env.VariableMap, Env.FuncMap, Env.Keyfuncs, false)
@@ -1214,12 +1229,17 @@ func (Env *Environment) Interpeter() {
 		case ForLoopType:
 			TempForLoop := ParseToken.(parser.ForLoop)
 			OverValue, Type := Evaluate(TempForLoop.Over, Env.VariableMap, Env.FuncMap, Env.Keyfuncs, false)
-
+			OverValue = OverValue.([]any)[0]
 			switch Typed := OverValue.(type) {
 
 			case []any:
 				for _, v := range Typed {
 					RunForLoop(Env, TempForLoop.Body, TempForLoop.Idenetifires, []any{v})
+
+					if Env.Breaked {
+						Env.Breaked = false
+						break
+					}
 				}
 			case map[any]any:
 				for k, v := range Typed {
@@ -1258,4 +1278,6 @@ func RunForLoop(Env *Environment, Body []any, Names []string, Values []any) {
 	NewInter := NewEnvironment(Body, Env.FuncMap, Env.VariableMap, Env.Keyfuncs, Env.StructMap)
 	NewInter.Interpeter()
 	Save.LoadTo(Env)
+	Env.Breaked = NewInter.Breaked
+	Env.Continue = NewInter.Continue
 }
