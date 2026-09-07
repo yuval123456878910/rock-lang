@@ -9,3 +9,10 @@ func fac(int number) (int) {
     }
     return NewNumber
 }
+
+func exp(float number)
+
+func power(float base float expondent) (float) {
+    house value = 0.0
+
+}

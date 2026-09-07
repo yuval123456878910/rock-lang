@@ -745,6 +745,8 @@ var Binding map[string]float32 = map[string]float32{
 	// Multiplication & Division (Highest priority for operators)
 	"*": 4,
 	"/": 4,
+	// Exponentiation (Highest priority for arithmetic operators)
+	"**": 5,
 }
 
 // error in the ParseBinding has to start at 2

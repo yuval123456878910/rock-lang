@@ -14,7 +14,6 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"reflect"
 	"slices"
 	"strconv"
 	"strings"
@@ -305,14 +304,27 @@ func less_or_equals[T int | float64, R int | float64](n T, m R) int {
 	return BoolToInt(float64(n) <= float64(m))
 }
 
-type EvalBool[T int | float64, R int | float64] func(n T, m T) int
+func pow[T int | float64, R int | float64](n T, m R) float64 {
+	return math.Pow(float64(n), float64(m))
+}
+
+type EvalBool[T int | float64, R int | float64] func(n T, m R) int
+type EvalOp[T int | float64, R int | float64] func(n T, m R) float64
 
 func condition_eval[T float64 | int, R float64 | int](RightSide any, LeftSide any, funct EvalBool[T, R]) (int, []string) {
 
 	if !slices.Contains(ApproveSideToOp, ReturnType(LeftSide)) && !slices.Contains(ApproveSideToOp, ReturnType(RightSide)) {
 		fmt.Println("Cant do None type!", ReturnType(LeftSide), ReturnType(RightSide))
 	}
-	return funct(LeftSide.(T), RightSide.(T)), []string{"int"}
+	return funct(LeftSide.(T), RightSide.(R)), []string{"int"}
+}
+
+func EvalOporator[T float64 | int, R float64 | int](RightSide any, LeftSide any, funct EvalOp[R, T]) (float64, []string) {
+
+	if !slices.Contains(ApproveSideToOp, ReturnType(LeftSide)) && !slices.Contains(ApproveSideToOp, ReturnType(RightSide)) {
+		fmt.Println("Cant do None type!", ReturnType(LeftSide), ReturnType(RightSide))
+	}
+	return funct(LeftSide.(R), RightSide.(T)), []string{"float"}
 }
 
 type package_switch struct {
@@ -700,22 +712,24 @@ func Evaluate(CalData any, indentMap map[string]Ident, funcMap map[string]parser
 		RightSide, _ := Evaluate(op.Right, indentMap, funcMap, keyFuncs, false)
 		return BoolToInt(LeftSide != RightSide), []string{"int"}
 	case ">=":
-		LeftSide, _ := Evaluate(op.Left, indentMap, funcMap, keyFuncs, false)
-		RightSide, _ := Evaluate(op.Right, indentMap, funcMap, keyFuncs, false)
+		LeftSide, T := Evaluate(op.Left, indentMap, funcMap, keyFuncs, false)
+		RightSide, T2 := Evaluate(op.Right, indentMap, funcMap, keyFuncs, false)
 
 		RV := RightSide
-		LV := RightSide
-		if reflect.TypeOf(RV).String() == "uint8" {
+		LV := LeftSide
+		TypeOf1 := T[0]
+		TypeOf2 := T2[0]
+		if T2[0] == "uint8" {
 			RV = int(RightSide.(uint8))
+			TypeOf2 = "int"
 		}
 
-		if reflect.TypeOf(LV).String() == "uint8" {
+		if T[0] == "uint8" {
 			LV = int(LeftSide.(uint8))
+			TypeOf1 = "int"
 		}
 
-		TypeOf1 := reflect.TypeOf(RV).String()
-		TypeOf2 := reflect.TypeOf(LV).String()
-		V := package_to_switch(TypeOf1, TypeOf2)
+		V := package_to_switch(TypeOf2, TypeOf1)
 
 		switch V {
 		case package_to_switch("int", "int"):
@@ -730,23 +744,24 @@ func Evaluate(CalData any, indentMap map[string]Ident, funcMap map[string]parser
 
 		return 0, []string{"int"}
 	case "<=":
-		LeftSide, _ := Evaluate(op.Left, indentMap, funcMap, keyFuncs, false)
-		RightSide, _ := Evaluate(op.Right, indentMap, funcMap, keyFuncs, false)
+		LeftSide, T := Evaluate(op.Left, indentMap, funcMap, keyFuncs, false)
+		RightSide, T2 := Evaluate(op.Right, indentMap, funcMap, keyFuncs, false)
 
 		RV := RightSide
-		LV := RightSide
-		if reflect.TypeOf(RV).String() == "uint8" {
+		LV := LeftSide
+		TypeOf1 := T[0]
+		TypeOf2 := T2[0]
+		if T2[0] == "uint8" {
 			RV = int(RightSide.(uint8))
+			TypeOf2 = "int"
 		}
 
-		if reflect.TypeOf(LV).String() == "uint8" {
+		if T[0] == "uint8" {
 			LV = int(LeftSide.(uint8))
+			TypeOf1 = "int"
 		}
 
-		TypeOf1 := reflect.TypeOf(RV).String()
-		TypeOf2 := reflect.TypeOf(LV).String()
-
-		V := package_to_switch(TypeOf1, TypeOf2)
+		V := package_to_switch(TypeOf2, TypeOf1)
 
 		switch V {
 		case package_to_switch("int", "int"):
@@ -760,6 +775,29 @@ func Evaluate(CalData any, indentMap map[string]Ident, funcMap map[string]parser
 		}
 		parser.Panic("Runtime error", "Counldn't match "+TypeOf1+" and "+TypeOf2)
 		return 0, []string{"int"}
+	case "**":
+		LeftSide, T := Evaluate(op.Left, indentMap, funcMap, keyFuncs, false)
+		RightSide, T2 := Evaluate(op.Right, indentMap, funcMap, keyFuncs, false)
+		RV := RightSide
+		LV := LeftSide
+		TypeOf1 := T[0]
+		TypeOf2 := T2[0]
+
+		V := package_to_switch(TypeOf2, TypeOf1)
+
+		switch V {
+		case package_to_switch("int", "int"):
+			return EvalOporator[int, int](RV, LV, pow)
+		case package_to_switch("int", "float"):
+
+			return EvalOporator[int, float64](RV, LV, pow)
+		case package_to_switch("float", "int"):
+			return EvalOporator[float64, int](RV, LV, pow)
+		case package_to_switch("float", "float"):
+			return EvalOporator[float64, float64](RV, LV, pow)
+		}
+		parser.Panic("Runtime error", "Counldn't match "+TypeOf1+" and "+TypeOf2)
+		return 0, []string{"float"}
 	case "&&":
 		LeftSide, T1 := Evaluate(op.Left, indentMap, funcMap, keyFuncs, false)
 		RightSide, T2 := Evaluate(op.Right, indentMap, funcMap, keyFuncs, false)
