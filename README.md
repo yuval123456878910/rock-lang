@@ -113,7 +113,7 @@ house <name> = <data> |> <function>
 Example:
 ```
 var list1 list = [1,2,3]
-house a = list1 |> look(1)
+house a = list1 |> pop(1)
 print(a)
 ```
 
