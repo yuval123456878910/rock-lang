@@ -1,6 +1,6 @@
 reach "conv"
 
-# splits line with the letter 
+# splits line with the letter
 func split(string name string letter) (list) {
     var new_list list = []
     var temp_string string = ""
@@ -28,9 +28,24 @@ func to_upper(string text) (char) {
         } else {
             NewString = NewString+s
         }
-        
+
     }
-    
+
+    return NewString
+}
+
+func to_lower(string text) (char) {
+    house NewString = ""
+    for s = (text) {
+        house B = to_char(s)
+        if B >= 'A' && B <= 'Z' {
+            NewString = NewString+to_string(B+32)
+        } else {
+            NewString = NewString+s
+        }
+
+    }
+
     return NewString
 }
 
@@ -38,12 +53,12 @@ func reaplace(string text string old string new) (string) {
     var newText string = ""
     house pos = 0
     while len(text)>pos  {
-        
+
         if  pos+len(old)> len(text) {
             newText = newText+text[pos]
             pos = pos + 1
             continue
-        } 
+        }
         if text[pos:pos+len(old)] == old{
             newText = newText+new
             pos = pos+len(old)+1

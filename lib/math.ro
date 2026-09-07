@@ -1,0 +1,11 @@
+const PI float = 3.141592653589793
+
+func fac(int number) (int) {
+    var NewNumber int = 1
+    var CI int = number
+    while CI > 0 {
+        NewNumber = NewNumber * CI
+        CI = CI-1
+    }
+    return NewNumber
+}

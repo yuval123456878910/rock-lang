@@ -148,6 +148,7 @@ func GetStartValueType(Env Environment, TypeGot string) (any, error) {
 
 var SetReachedRock map[string]string = map[string]string{
 	"strtools": "$/lib/strtools.ro",
+	"math":     "$/lib/math.ro",
 }
 var SetReachedEnv map[string]Environment = map[string]Environment{
 	"conv": convLibEnv,
@@ -1222,21 +1223,25 @@ func (Env *Environment) Interpeter() {
 		case ForLoopType:
 			TempForLoop := ParseToken.(parser.ForLoop)
 			OverValue, Type := Evaluate(TempForLoop.Over, Env.VariableMap, Env.FuncMap, Env.Keyfuncs, false)
-			OverValue = OverValue.([]any)[0]
+
+			OverValue = OverValue
 			switch Typed := OverValue.(type) {
 
 			case []any:
-				for _, v := range Typed {
-					RunForLoop(Env, TempForLoop.Body, TempForLoop.Idenetifires, []any{v})
+				switch Typed1 := OverValue.([]any)[0].(type) {
+				case []any:
+					for _, v := range Typed1 {
+						RunForLoop(Env, TempForLoop.Body, TempForLoop.Idenetifires, []any{v})
 
-					if Env.Breaked {
-						Env.Breaked = false
-						break
+						if Env.Breaked {
+							Env.Breaked = false
+							break
+						}
 					}
-				}
-			case map[any]any:
-				for k, v := range Typed {
-					RunForLoop(Env, TempForLoop.Body, TempForLoop.Idenetifires, []any{k, v})
+				case map[any]any:
+					for k, v := range Typed1 {
+						RunForLoop(Env, TempForLoop.Body, TempForLoop.Idenetifires, []any{k, v})
+					}
 				}
 
 			case string:
