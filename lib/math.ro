@@ -1,4 +1,5 @@
 const PI float = 3.141592653589793
+const E float = 2.718281828459045
 
 func fac(int number) (int) {
     var NewNumber int = 1
@@ -10,7 +11,13 @@ func fac(int number) (int) {
     return NewNumber
 }
 
-func exp(float number)
+func exp_float(float number) (float) {
+    return E ** number
+}
+
+func exp_int(int number) (float) {
+    return E ** number
+}
 
 func power(float base float expondent) (float) {
     house value = 0.0

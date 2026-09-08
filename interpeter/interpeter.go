@@ -319,12 +319,13 @@ func condition_eval[T float64 | int, R float64 | int](RightSide any, LeftSide an
 	return funct(LeftSide.(T), RightSide.(R)), []string{"int"}
 }
 
-func EvalOporator[T float64 | int, R float64 | int](RightSide any, LeftSide any, funct EvalOp[R, T]) (float64, []string) {
+func EvalOporatorFloat[T float64 | int, R float64 | int](LeftSide any, RightSide any, funct EvalOp[T, R]) (float64, []string) {
 
 	if !slices.Contains(ApproveSideToOp, ReturnType(LeftSide)) && !slices.Contains(ApproveSideToOp, ReturnType(RightSide)) {
 		fmt.Println("Cant do None type!", ReturnType(LeftSide), ReturnType(RightSide))
 	}
-	return funct(LeftSide.(R), RightSide.(T)), []string{"float"}
+
+	return funct(LeftSide.(T), RightSide.(R)), []string{"float"}
 }
 
 type package_switch struct {
@@ -360,7 +361,6 @@ func Evaluate(CalData any, indentMap map[string]Ident, funcMap map[string]parser
 
 			TempIdent := CalData.(lexer.Token)
 			IdentGot, ok := indentMap[TempIdent.Value]
-
 			if !ok {
 				fmt.Println("Coudnt find a variable named:", TempIdent.Value)
 				os.Exit(1)
@@ -391,6 +391,7 @@ func Evaluate(CalData any, indentMap map[string]Ident, funcMap map[string]parser
 			os.Exit(1)
 		}
 		CallVarMap := map[string]Ident{}
+		maps.Copy(CallVarMap, indentMap)
 		TempValues := []any{}
 		for idx, ident := range TempCall.ParimitersInput {
 			callEval, _ := Evaluate(ident, indentMap, funcMap, keyFuncs, false)
@@ -782,19 +783,18 @@ func Evaluate(CalData any, indentMap map[string]Ident, funcMap map[string]parser
 		LV := LeftSide
 		TypeOf1 := T[0]
 		TypeOf2 := T2[0]
-
-		V := package_to_switch(TypeOf2, TypeOf1)
+		V := package_to_switch(TypeOf1, TypeOf2)
 
 		switch V {
 		case package_to_switch("int", "int"):
-			return EvalOporator[int, int](RV, LV, pow)
+			return EvalOporatorFloat[int, int](LV, RV, pow)
 		case package_to_switch("int", "float"):
-
-			return EvalOporator[int, float64](RV, LV, pow)
+			return EvalOporatorFloat[int, float64](LV, RV, pow)
 		case package_to_switch("float", "int"):
-			return EvalOporator[float64, int](RV, LV, pow)
+			return EvalOporatorFloat[float64, int](LV, RV, pow)
 		case package_to_switch("float", "float"):
-			return EvalOporator[float64, float64](RV, LV, pow)
+
+			return EvalOporatorFloat[float64, float64](LV, RV, pow)
 		}
 		parser.Panic("Runtime error", "Counldn't match "+TypeOf1+" and "+TypeOf2)
 		return 0, []string{"float"}
