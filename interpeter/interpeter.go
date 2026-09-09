@@ -1,7 +1,9 @@
 package interpeter
 
 /* Add:
-add two set
+fixed func passing:
+	1. fixed passing the function
+	2. fixed calling the
 */
 
 import (
