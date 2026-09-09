@@ -1,2 +1,9 @@
-reach "math"
-print(exp_float(2.1))
+func test(int number) (float) {
+    return number + float
+}
+
+func OPEN(func e) () {
+    print(e(2))
+}
+
+print(OPEN(test))

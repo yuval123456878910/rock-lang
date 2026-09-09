@@ -361,7 +361,12 @@ func Evaluate(CalData any, indentMap map[string]Ident, funcMap map[string]parser
 
 			TempIdent := CalData.(lexer.Token)
 			IdentGot, ok := indentMap[TempIdent.Value]
-			if !ok {
+			FuncGot, ok2 := funcMap[TempIdent.Value]
+
+			if ok2 {
+				return FuncGot, []string{"func"}
+			}
+			if !ok && !ok2 {
 				fmt.Println("Coudnt find a variable named:", TempIdent.Value)
 				os.Exit(1)
 			}
@@ -973,8 +978,18 @@ func (Env *Environment) Interpeter() {
 				os.Exit(1)
 			}
 			CallVarMap := map[string]Ident{}
+			maps.Copy(CallVarMap, Env.VariableMap)
+			FuncMap := map[string]parser.Function{}
+			maps.Copy(FuncMap, Env.FuncMap)
 			TempValues := []any{}
+			fmt.Println(TempCall.ParimitersInput)
 			for idx, ident := range TempCall.ParimitersInput {
+
+				if F, ok := ident.(parser.Function); ok {
+					fmt.Println("WORKED")
+					FuncMap[CallFunc.Perameters[idx].Name] = F
+					continue
+				}
 				callEval, _ := Evaluate(ident, Env.VariableMap, Env.FuncMap, Env.Keyfuncs, false)
 
 				if ok2 {
@@ -992,7 +1007,7 @@ func (Env *Environment) Interpeter() {
 				continue
 			}
 
-			NewEnv := Environment{ParseDate: CallFunc.Body, VariableMap: CallVarMap, FuncMap: Env.FuncMap, Keyfuncs: Env.Keyfuncs}
+			NewEnv := Environment{ParseDate: CallFunc.Body, VariableMap: CallVarMap, FuncMap: FuncMap, Keyfuncs: Env.Keyfuncs}
 
 			NewEnv.Interpeter()
 			NewSave.LoadTo(Env)

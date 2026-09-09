@@ -9,7 +9,7 @@ import (
 )
 
 var AviableTypes []string = []string{
-	"string", "float", "list", "dict", "char", "int", "any",
+	"string", "float", "list", "dict", "char", "int", "any", "func",
 }
 
 func FindNexer(StartPos int, Tokens []lexer.Token, startFind lexer.Token, endFind lexer.Token) (int, error) {
