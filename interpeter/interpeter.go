@@ -1,10 +1,8 @@
 package interpeter
 
 /* Add:
-fixed func passing:
-	1. fixed passing the function
-	2. fixed calling the
-*/
+
+ */
 
 import (
 	"bufio"
@@ -369,7 +367,7 @@ func Evaluate(CalData any, indentMap map[string]Ident, funcMap map[string]parser
 				return FuncGot, []string{"func"}
 			}
 			if !ok && !ok2 {
-				fmt.Println("Coudnt find a variable named:", TempIdent.Value)
+				parser.Panic("Runtime error", "Coudnt find a variable or func named: "+TempIdent.Value)
 				os.Exit(1)
 			}
 			return IdentGot.Value, []string{indentMap[TempIdent.Value].Type}
@@ -388,23 +386,30 @@ func Evaluate(CalData any, indentMap map[string]Ident, funcMap map[string]parser
 		}
 		return []any{NewList}, []string{"list"}
 	case ReturnType(parser.CallFunction{}):
-		TempCall := CalData.(parser.CallFunction)
 
+		TempCall := CalData.(parser.CallFunction)
 		CallFunc, ok := funcMap[TempCall.Name]
 
 		_, ok2 := keyFuncs[TempCall.Name]
 		if !ok && !ok2 {
-			fmt.Println("Error, coudnt find the func:", TempCall.Name)
-			os.Exit(1)
+			parser.Panic("Runtime error", "Error, coudnt find the func: "+TempCall.Name)
 		}
 		CallVarMap := map[string]Ident{}
+		CallFuncMap := map[string]parser.Function{}
 		maps.Copy(CallVarMap, indentMap)
+		maps.Copy(CallFuncMap, funcMap)
 		TempValues := []any{}
 		for idx, ident := range TempCall.ParimitersInput {
 			callEval, _ := Evaluate(ident, indentMap, funcMap, keyFuncs, false)
+			if F, ok := callEval.(parser.Function); ok {
+				CallFuncMap[CallFunc.Perameters[idx].Name] = F
+				continue
+
+			}
 			if ok2 {
 				TempValues = append(TempValues, callEval)
 			} else {
+
 				CallVarMap[CallFunc.Perameters[idx].Name] = Ident{Value: callEval, Name: CallFunc.Perameters[idx].Name, Type: CallFunc.Perameters[idx].Type, IsConst: false}
 			}
 
@@ -415,7 +420,7 @@ func Evaluate(CalData any, indentMap map[string]Ident, funcMap map[string]parser
 			return l, t
 		}
 
-		NewEnv := Environment{ParseDate: CallFunc.Body, VariableMap: CallVarMap, FuncMap: funcMap, Keyfuncs: keyFuncs}
+		NewEnv := Environment{ParseDate: CallFunc.Body, VariableMap: CallVarMap, FuncMap: CallFuncMap, Keyfuncs: keyFuncs}
 
 		NewEnv.Interpeter()
 		Types := []string{}
@@ -440,8 +445,8 @@ func Evaluate(CalData any, indentMap map[string]Ident, funcMap map[string]parser
 		case float64:
 			return -ValType, []string{"float"}
 		default:
-			fmt.Println("Cant negetive a none number type!")
-			os.Exit(1)
+			parser.Panic("Math error", "Cant negetive a none number type!")
+
 		}
 		return Value, []string{}
 	case ThreadType:
@@ -540,15 +545,16 @@ func Evaluate(CalData any, indentMap map[string]Ident, funcMap map[string]parser
 
 	op, ok := CalData.(parser.Oporation)
 	if !ok {
-		fmt.Println("Cant continue because there is not oporation selected!", CalData)
-		os.Exit(1)
+		parser.Panic("Op error", fmt.Sprint("Cant continue because there is not oporation selected!", CalData))
+
 	}
 	switch op.Op {
 	case "+":
 		LeftSide, _ := Evaluate(op.Left, indentMap, funcMap, keyFuncs, false)
 		RightSide, _ := Evaluate(op.Right, indentMap, funcMap, keyFuncs, false)
 		if !slices.Contains(ApproveSideToOp, ReturnType(LeftSide)) && !slices.Contains(ApproveSideToOp, ReturnType(RightSide)) {
-			fmt.Println("Cant do None type!", ReturnType(LeftSide), ReturnType(RightSide))
+			parser.Panic("Type mismatch", "one of the type doesn't exist"+ReturnType(LeftSide)+", "+ReturnType(RightSide))
+
 		}
 
 		switch left := LeftSide.(type) {
@@ -575,14 +581,14 @@ func Evaluate(CalData any, indentMap map[string]Ident, funcMap map[string]parser
 			if ok2 {
 				return right2 + left, []string{"float"}
 			}
-			fmt.Println("Cant add two incompadeple types!")
-			os.Exit(1)
+			parser.Panic("Runtime error", "Cant add two incompadeple types!")
 
 		case string:
 
 			right, ok := RightSide.(string)
 			if !ok {
-				fmt.Println("Cant add to a string, a none string", RightSide)
+				parser.Panic("Runtime error", "cant add to a string"+ReturnType(RightSide))
+
 			}
 			return left + right, []string{"string"}
 		case byte:
@@ -595,13 +601,13 @@ func Evaluate(CalData any, indentMap map[string]Ident, funcMap map[string]parser
 			if ok2 {
 				return left + right2, []string{"char"}
 			}
-			fmt.Println("Can't add to a byte a incompatible type!")
+			parser.Panic("Runtime error", "Cant add two incompadeple types!")
 		}
 	case "-":
 		LeftSide, _ := Evaluate(op.Left, indentMap, funcMap, keyFuncs, false)
 		RightSide, _ := Evaluate(op.Right, indentMap, funcMap, keyFuncs, false)
 		if !slices.Contains(ApproveSideToOp, ReturnType(LeftSide)) && !slices.Contains(ApproveSideToOp, ReturnType(RightSide)) {
-			fmt.Println("Cant do None type!", ReturnType(LeftSide), ReturnType(RightSide))
+			parser.Panic("Type mismatch", "one of the type doesn't exist"+ReturnType(LeftSide)+", "+ReturnType(RightSide))
 		}
 		switch left := LeftSide.(type) {
 		case int:
@@ -617,8 +623,7 @@ func Evaluate(CalData any, indentMap map[string]Ident, funcMap map[string]parser
 			if ok3 {
 				return byte(left) - right3, []string{"char"}
 			}
-			fmt.Println("Can't added an incompatible type to an integer!")
-			os.Exit(1)
+			parser.Panic("Runtime error", "Cant add two incompadeple types!")
 		case float64:
 			right, ok := RightSide.(int)
 			if ok {
@@ -628,8 +633,7 @@ func Evaluate(CalData any, indentMap map[string]Ident, funcMap map[string]parser
 			if ok2 {
 				return left - right2, []string{"float"}
 			}
-			fmt.Println("Cant add two incompadeple types!")
-			os.Exit(1)
+			parser.Panic("Runtime error", "Cant add two incompadeple types!")
 
 		case byte:
 
@@ -641,8 +645,7 @@ func Evaluate(CalData any, indentMap map[string]Ident, funcMap map[string]parser
 			if ok2 {
 				return left - right2, []string{"char"}
 			}
-			fmt.Println("Can't substract to a byte a incompatible type!")
-			os.Exit(1)
+			parser.Panic("Runtime error", "Cant add two incompadeple types!")
 		}
 	case "*":
 		LeftSide, _ := Evaluate(op.Left, indentMap, funcMap, keyFuncs, false)
@@ -657,8 +660,7 @@ func Evaluate(CalData any, indentMap map[string]Ident, funcMap map[string]parser
 			if ok {
 				return floatRight * float64(left), []string{"float"}
 			}
-			fmt.Println("Cant add two incompadeple types!")
-			os.Exit(1)
+			parser.Panic("Runtime error", "Cant add two incompadeple types!")
 		case float64:
 			integerRight, ok := RightSide.(int)
 			if ok {
@@ -668,8 +670,7 @@ func Evaluate(CalData any, indentMap map[string]Ident, funcMap map[string]parser
 			if ok {
 				return floatRight * left, []string{"float"}
 			}
-			fmt.Println("Cant add two incompadeple types!")
-			os.Exit(1)
+			parser.Panic("Runtime error", "Cant add two incompadeple types!")
 		case string:
 			integerRight, ok := RightSide.(int)
 			if ok {
@@ -679,14 +680,13 @@ func Evaluate(CalData any, indentMap map[string]Ident, funcMap map[string]parser
 				}
 				return value, []string{"string"}
 			}
-			fmt.Println("Cant add two incompadeple types!")
-			os.Exit(1)
+			parser.Panic("Runtime error", "Cant add two incompadeple types!")
 		}
 	case "/":
 		LeftSide, _ := Evaluate(op.Left, indentMap, funcMap, keyFuncs, false)
 		RightSide, _ := Evaluate(op.Right, indentMap, funcMap, keyFuncs, false)
 		if !slices.Contains(ApproveSideToOp, ReturnType(LeftSide)) && !slices.Contains(ApproveSideToOp, ReturnType(RightSide)) {
-			fmt.Println("Cant do None type!", ReturnType(LeftSide), ReturnType(RightSide))
+			parser.Panic("Type mismatch", "one of the type doesn't exist"+ReturnType(LeftSide)+", "+ReturnType(RightSide))
 		}
 		switch left := LeftSide.(type) {
 		case int:
@@ -698,6 +698,7 @@ func Evaluate(CalData any, indentMap map[string]Ident, funcMap map[string]parser
 			if ok2 {
 				return float64(left) / float64(right2), []string{"float"}
 			}
+			parser.Panic("Runtime error", "Cant add two incompadeple types!")
 		case float64:
 			right, ok := RightSide.(int)
 			if ok {
@@ -707,8 +708,7 @@ func Evaluate(CalData any, indentMap map[string]Ident, funcMap map[string]parser
 			if ok2 {
 				return left / right2, []string{"float"}
 			}
-			fmt.Println("Cant add two incompadeple types!")
-			os.Exit(1)
+			parser.Panic("Runtime error", "Cant add two incompadeple types!")
 
 		}
 	case "==":
@@ -861,6 +861,7 @@ func Evaluate(CalData any, indentMap map[string]Ident, funcMap map[string]parser
 				return BoolToInt(left > RightValue2), []string{"int"}
 			}
 		}
+		parser.Panic("Runtime error", "Cant add two incompadeple types!")
 
 	}
 	return Value, []string{"null"}
@@ -956,8 +957,9 @@ func (Env *Environment) Interpeter() {
 			if token.Type == lexer.IDENTIFIER {
 				val, ok := Env.VariableMap[token.Value]
 				if !ok {
-					fmt.Println("Couldn't find veruble names:", token.Value)
-					os.Exit(1)
+					fmt.Println()
+					parser.Panic("Variable error", "Couldn't find veruble names: "+token.Value)
+
 				}
 				Env.Output = append(Env.Output, val.Value)
 
@@ -976,8 +978,7 @@ func (Env *Environment) Interpeter() {
 			CallFunc, ok := Env.FuncMap[TempCall.Name]
 			_, ok2 := Env.Keyfuncs[TempCall.Name]
 			if !ok && !ok2 {
-				fmt.Println("Error, coudnt find the func:", TempCall.Name)
-				os.Exit(1)
+				parser.Panic("Func error", "Couldn't finc the func "+TempCall.Name)
 			}
 			CallVarMap := map[string]Ident{}
 			maps.Copy(CallVarMap, Env.VariableMap)

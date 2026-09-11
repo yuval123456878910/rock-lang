@@ -171,3 +171,4 @@ go run rock.go <filepath>
 
 ## notes
 while and for loop are buggy and the `continue` and `break` could break randomly!!
+To see more in build function, libaries go to [build_in.md](build_in.md)

@@ -1,5 +1,5 @@
 func test(int number) (float) {
-    return number + float
+    return number + 1
 }
 
 func OPEN(func e) () {
