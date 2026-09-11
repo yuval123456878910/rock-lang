@@ -168,6 +168,10 @@ Download the files, install go and run:
 ```
 go run rock.go <filepath>
 ```
+or if you have windows than run inside the folder of the launguage:
+```
+rocks.exe <filepath>
+```
 
 ## notes
 while and for loop are buggy and the `continue` and `break` could break randomly!!

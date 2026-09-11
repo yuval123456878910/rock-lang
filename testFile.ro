@@ -3,7 +3,7 @@ func test(int number) (float) {
 }
 
 func OPEN(func e) () {
-    print(e(2))
+    return e(2)
 }
 
 print(OPEN(test))

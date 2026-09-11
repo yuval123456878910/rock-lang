@@ -985,11 +985,9 @@ func (Env *Environment) Interpeter() {
 			FuncMap := map[string]parser.Function{}
 			maps.Copy(FuncMap, Env.FuncMap)
 			TempValues := []any{}
-			fmt.Println(TempCall.ParimitersInput)
 			for idx, ident := range TempCall.ParimitersInput {
 
 				if F, ok := ident.(parser.Function); ok {
-					fmt.Println("WORKED")
 					FuncMap[CallFunc.Perameters[idx].Name] = F
 					continue
 				}
