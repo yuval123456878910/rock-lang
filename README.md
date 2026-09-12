@@ -1,3 +1,5 @@
+<img width="250" height="150" alt="rockLogo" src="https://github.com/user-attachments/assets/2259f74f-2c52-4489-98a5-f9c4f4c992ea" /><svg xmlns="http://www.w3.org/2000/svg" 
+
 # Rocks proggraming launguage
 **This project containes a lot of ai generated content**
 ## Print "hello world":
