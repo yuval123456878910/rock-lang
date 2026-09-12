@@ -77,6 +77,7 @@ type Environment struct {
 	Breaked     bool
 	StructMap   map[string]parser.Struct
 	Continue    bool
+	Debug       bool
 }
 
 func BoolToInt(Bool bool) int {
@@ -149,6 +150,7 @@ var SetReachedRock map[string]string = map[string]string{
 	"strtools": "$/lib/strtools.ro",
 	"math":     "$/lib/math.ro",
 }
+
 var SetReachedEnv map[string]Environment = map[string]Environment{
 	"conv": convLibEnv,
 }
@@ -163,8 +165,8 @@ func NewEnvironment(parseDate []any, funcMap map[string]parser.Function, variabl
 	TempEnv.Returned = false
 	TempEnv.Breaked = false
 	TempEnv.Continue = false
+	TempEnv.Debug = false
 	TempEnv.Keyfuncs["print"] = Keyfunc(func(args ...any) (any, []string) {
-
 		for _, arg := range args {
 			switch Targ := arg.(type) {
 			case []any:
@@ -181,7 +183,6 @@ func NewEnvironment(parseDate []any, funcMap map[string]parser.Function, variabl
 		return args, []string{"any"}
 	})
 	TempEnv.Keyfuncs["append"] = func(args ...any) (any, []string) {
-
 		BetterArgs := args[0].([]any)
 
 		switch BetterArgs[0].(type) {
@@ -191,7 +192,7 @@ func NewEnvironment(parseDate []any, funcMap map[string]parser.Function, variabl
 		Data := BetterArgs
 		Data = append(Data, args[1])
 
-		return Data, []string{"list"}
+		return []any{Data}, []string{"list"}
 	}
 	TempEnv.Keyfuncs["pop"] = func(args ...any) (any, []string) {
 		Data := args[0].([]any)[0].([]any)
@@ -199,7 +200,7 @@ func NewEnvironment(parseDate []any, funcMap map[string]parser.Function, variabl
 		SideRight := Data[:location]
 		SideLeft := Data[location+1:]
 		Combine := append(SideRight, SideLeft...)
-		return Combine, []string{"list"}
+		return []any{Combine}, []string{"list"}
 	}
 
 	TempEnv.Keyfuncs["scan"] = func(args ...any) (any, []string) {
@@ -300,6 +301,7 @@ func GetToSelection(Env *Environment, Select *parser.SectionList) *any {
 func bigger_or_equals[T int | float64, R int | float64](n T, m R) int {
 	return BoolToInt(float64(n) >= float64(m))
 }
+
 func less_or_equals[T int | float64, R int | float64](n T, m R) int {
 	return BoolToInt(float64(n) <= float64(m))
 }
@@ -308,11 +310,12 @@ func pow[T int | float64, R int | float64](n T, m R) float64 {
 	return math.Pow(float64(n), float64(m))
 }
 
-type EvalBool[T int | float64, R int | float64] func(n T, m R) int
-type EvalOp[T int | float64, R int | float64] func(n T, m R) float64
+type (
+	EvalBool[T int | float64, R int | float64] func(n T, m R) int
+	EvalOp[T int | float64, R int | float64]   func(n T, m R) float64
+)
 
 func condition_eval[T float64 | int, R float64 | int](RightSide any, LeftSide any, funct EvalBool[T, R]) (int, []string) {
-
 	if !slices.Contains(ApproveSideToOp, ReturnType(LeftSide)) && !slices.Contains(ApproveSideToOp, ReturnType(RightSide)) {
 		fmt.Println("Cant do None type!", ReturnType(LeftSide), ReturnType(RightSide))
 	}
@@ -320,7 +323,6 @@ func condition_eval[T float64 | int, R float64 | int](RightSide any, LeftSide an
 }
 
 func EvalOporatorFloat[T float64 | int, R float64 | int](LeftSide any, RightSide any, funct EvalOp[T, R]) (float64, []string) {
-
 	if !slices.Contains(ApproveSideToOp, ReturnType(LeftSide)) && !slices.Contains(ApproveSideToOp, ReturnType(RightSide)) {
 		fmt.Println("Cant do None type!", ReturnType(LeftSide), ReturnType(RightSide))
 	}
@@ -370,6 +372,7 @@ func Evaluate(CalData any, indentMap map[string]Ident, funcMap map[string]parser
 				parser.Panic("Runtime error", "Coudnt find a variable or func named: "+TempIdent.Value)
 				os.Exit(1)
 			}
+
 			return IdentGot.Value, []string{indentMap[TempIdent.Value].Type}
 		case lexer.NEWLINE:
 
@@ -409,7 +412,6 @@ func Evaluate(CalData any, indentMap map[string]Ident, funcMap map[string]parser
 			if ok2 {
 				TempValues = append(TempValues, callEval)
 			} else {
-
 				CallVarMap[CallFunc.Perameters[idx].Name] = Ident{Value: callEval, Name: CallFunc.Perameters[idx].Name, Type: CallFunc.Perameters[idx].Type, IsConst: false}
 			}
 
@@ -546,7 +548,6 @@ func Evaluate(CalData any, indentMap map[string]Ident, funcMap map[string]parser
 	op, ok := CalData.(parser.Oporation)
 	if !ok {
 		parser.Panic("Op error", fmt.Sprint("Cant continue because there is not oporation selected!", CalData))
-
 	}
 	switch op.Op {
 	case "+":
@@ -554,7 +555,6 @@ func Evaluate(CalData any, indentMap map[string]Ident, funcMap map[string]parser
 		RightSide, _ := Evaluate(op.Right, indentMap, funcMap, keyFuncs, false)
 		if !slices.Contains(ApproveSideToOp, ReturnType(LeftSide)) && !slices.Contains(ApproveSideToOp, ReturnType(RightSide)) {
 			parser.Panic("Type mismatch", "one of the type doesn't exist"+ReturnType(LeftSide)+", "+ReturnType(RightSide))
-
 		}
 
 		switch left := LeftSide.(type) {
@@ -588,7 +588,6 @@ func Evaluate(CalData any, indentMap map[string]Ident, funcMap map[string]parser
 			right, ok := RightSide.(string)
 			if !ok {
 				parser.Panic("Runtime error", "cant add to a string"+ReturnType(RightSide))
-
 			}
 			return left + right, []string{"string"}
 		case byte:
@@ -714,6 +713,7 @@ func Evaluate(CalData any, indentMap map[string]Ident, funcMap map[string]parser
 	case "==":
 		LeftSide, _ := Evaluate(op.Left, indentMap, funcMap, keyFuncs, false)
 		RightSide, _ := Evaluate(op.Right, indentMap, funcMap, keyFuncs, false)
+
 		return BoolToInt(LeftSide == RightSide), []string{"int"}
 	case "!=":
 		LeftSide, _ := Evaluate(op.Left, indentMap, funcMap, keyFuncs, false)
@@ -896,6 +896,18 @@ func ToMethod(Method parser.AccessMethod, Env Environment) *any {
 	return IdentLocation
 }
 
+func (Env *Environment) Status(CurrentPlay any) {
+	if !Env.Debug {
+		return
+	}
+	fmt.Printf("%T\n", CurrentPlay)
+	fmt.Println("Output:", Env.Output)
+	fmt.Println("Vars:", Env.VariableMap)
+	fmt.Println("Is breaking:", Env.Breaked)
+	fmt.Println("Is returned:", Env.Returned)
+	fmt.Println("Structers:", Env.StructMap, "\n")
+}
+
 func (Env *Environment) Interpeter() {
 	if Env.VariableMap == nil {
 		Env.VariableMap = map[string]Ident{}
@@ -905,7 +917,7 @@ func (Env *Environment) Interpeter() {
 	}
 
 	for i := 0; i < len(Env.ParseDate); i++ {
-
+		Env.Status(Env.ParseDate[i])
 		ParseToken := Env.ParseDate[i]
 
 		if _, Is := ParseToken.(parser.Continue); Is {
@@ -996,7 +1008,6 @@ func (Env *Environment) Interpeter() {
 				if ok2 {
 					TempValues = append(TempValues, callEval)
 				} else {
-
 					CallVarMap[CallFunc.Perameters[idx].Name] = Ident{Value: callEval, Name: CallFunc.Perameters[idx].Name, Type: CallFunc.Perameters[idx].Type, IsConst: false}
 				}
 
@@ -1012,7 +1023,6 @@ func (Env *Environment) Interpeter() {
 
 			NewEnv.Interpeter()
 			NewSave.LoadTo(Env)
-			Env.Output = append(Env.Output, NewEnv.Output...)
 
 		case ReturnType(parser.Return{}):
 			TempReturn := ParseToken.(parser.Return)
@@ -1021,6 +1031,7 @@ func (Env *Environment) Interpeter() {
 				ReturnEval, _ := Evaluate(expr, Env.VariableMap, Env.FuncMap, Env.Keyfuncs, false)
 				Env.Output = append(Env.Output, ReturnEval)
 			}
+
 			Env.Returned = true
 			return
 
@@ -1047,6 +1058,7 @@ func (Env *Environment) Interpeter() {
 					os.Exit(1)
 				}
 				tempIdent.Value = NewEnv
+
 				Env.VariableMap[IdentGet.Name] = tempIdent
 			case parser.AccessMethod:
 
@@ -1136,7 +1148,7 @@ func (Env *Environment) Interpeter() {
 			}
 		case IfType:
 			var TempIfPointer parser.IfStm = ParseToken.(parser.IfStm)
-			for true {
+			for {
 				Values, types := Evaluate(TempIfPointer.Condition, Env.VariableMap, Env.FuncMap, Env.Keyfuncs, false)
 				if len(types) != 1 {
 					fmt.Println("The condition isnt one typed!")
@@ -1153,13 +1165,17 @@ func (Env *Environment) Interpeter() {
 					NewEnv := NewEnvironment(TempIfPointer.Body, Env.FuncMap, Env.VariableMap, Env.Keyfuncs, Env.StructMap)
 					NewEnv.Interpeter()
 					if NewEnv.Returned {
+						Env.Returned = true
 						Env.Output = append(Env.Output, NewEnv.Output...)
 						return
 					}
 					NewSave.LoadTo(Env)
 					Env.Breaked = NewEnv.Breaked
 					Env.Continue = NewEnv.Continue
-					if Env.Breaked || Env.Continue {
+					Env.Output = NewEnv.Output
+					Env.Returned = NewEnv.Returned
+
+					if Env.Breaked || Env.Continue || Env.Returned {
 						return
 					}
 					break
@@ -1177,7 +1193,6 @@ func (Env *Environment) Interpeter() {
 			Path := TempReach.Path
 			if pathSet, ok := SetReachedRock[Path]; ok {
 				Path = pathSet
-
 			}
 			if pathSetEnv, ok2 := SetReachedEnv[Path]; ok2 {
 				maps.Copy(Env.Keyfuncs, pathSetEnv.Keyfuncs)
@@ -1253,10 +1268,10 @@ func (Env *Environment) Interpeter() {
 
 				NewEnv := NewEnvironment(TempWhile.Body, Env.FuncMap, Env.VariableMap, Env.Keyfuncs, Env.StructMap)
 				NewEnv.Interpeter()
-
+				// fmt.Println(NewEnv.Returned, NewEnv.Output)
 				// FIX: If return triggered inside while loop, exit the entire block
 				if NewEnv.Returned {
-					Env.Output = append(Env.Output, NewEnv.Output...)
+					Env.Output = NewEnv.Output
 					Env.Returned = true
 					return
 				}
@@ -1279,14 +1294,28 @@ func (Env *Environment) Interpeter() {
 			OverValue, Type := Evaluate(TempForLoop.Over, Env.VariableMap, Env.FuncMap, Env.Keyfuncs, false)
 
 			OverValue = OverValue
+
 			switch Typed := OverValue.(type) {
 
 			case []any:
 				switch Typed1 := OverValue.([]any)[0].(type) {
 				case []any:
-					for _, v := range Typed1 {
+					loopTarget := Typed
+					for len(loopTarget) == 1 {
+						if inner, ok := loopTarget[0].([]any); ok {
+							loopTarget = inner
+						} else {
+							break
+						}
+					}
+
+					// 2. Iterate over the clean, unwrapped list
+					for _, v := range loopTarget {
 						RunForLoop(Env, TempForLoop.Body, TempForLoop.Idenetifires, []any{v})
 
+						if Env.Returned {
+							return
+						}
 						if Env.Breaked {
 							Env.Breaked = false
 							break
@@ -1332,4 +1361,8 @@ func RunForLoop(Env *Environment, Body []any, Names []string, Values []any) {
 	Save.LoadTo(Env)
 	Env.Breaked = NewInter.Breaked
 	Env.Continue = NewInter.Continue
+	if NewInter.Returned {
+		Env.Returned = true
+		Env.Output = NewInter.Output
+	}
 }

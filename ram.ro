@@ -1,0 +1,37 @@
+reach "conv"
+
+func InList(any item, list l) (int) {
+    house Found = 0
+    for r = (l) {
+        if r == item {
+            
+            Found = 1
+            break
+        }
+    }
+    return Found
+}
+func raj(int ep) (list) {
+    house on = [0]
+    house i = 0
+    house jmp = 1
+    house epotch = 0 
+    while ep > epotch {
+        if i-jmp > 0 && InList(i-jmp, on) == 0 {
+            
+            i = i-jmp 
+            on = append(on, i)
+            jmp = jmp + 1
+            epotch = epotch + 1
+            continue    
+        }
+         
+        i = i+jmp
+        on = append(on, i)
+        jmp = jmp + 1
+        epotch = epotch + 1
+    }
+    return on 
+}
+house epotches = scan("length: ")
+print(raj(to_int(epotches)))

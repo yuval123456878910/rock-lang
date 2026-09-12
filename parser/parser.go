@@ -283,7 +283,7 @@ func Parse(Tokens []lexer.Token) []any {
 			}
 			StartToken := lexer.Token{Value: "(", Type: lexer.PUNCTUATOR}
 			EndToken := lexer.Token{Value: ")", Type: lexer.PUNCTUATOR}
-			index, err := FindNexer(pos+3, Tokens, StartToken, EndToken)
+			index, err := FindNexer(pos+2, Tokens, StartToken, EndToken)
 			if err != nil {
 				fmt.Println("Error: The perameters didnt end!")
 				return nil
@@ -291,7 +291,7 @@ func Parse(Tokens []lexer.Token) []any {
 
 			if index+1 > pos {
 				for idx, perameters := range Tokens[pos+3 : index+1] {
-					if perameters.Type != lexer.STRING && slices.Contains(AviableTypes, perameters.Value) && perameters.Value != "any" {
+					if perameters.Type != lexer.STRING && slices.Contains(AviableTypes, perameters.Value) {
 						TempPar := Parimiter{Type: perameters.Value, Name: Tokens[pos+4:][idx].Value}
 						Current_Result.Perameters = append(Current_Result.Perameters, TempPar)
 					}

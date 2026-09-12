@@ -1,9 +1,0 @@
-func test(int number) (float) {
-    return number + 1
-}
-
-func OPEN(func e) () {
-    return e(2)
-}
-
-print(OPEN(test))
